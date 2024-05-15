@@ -100,23 +100,17 @@ class Controller():
         self.init_newArqW()
         self.init_newHabRegW()
 
-        
-        #self.mainWindow.btnUpdate.clicked.connect(self.update_values_table_habW)
+    
         
         self.mainWindow.btnHab.clicked.connect(self.show_update_habW)
         self.mainWindow.btnArq.clicked.connect(self.show_update_arqW)
         self.mainWindow.btnClient.clicked.connect(self.show_update_cliW)
-        #self.mainWindow.btnHabReg.clicked.connect(self.show_update_habRegW)
-        
-        #self.mainWindow.menu.triggered.connect(self.callback_test)
-
         self.mainWindow.btnSunat.clicked.connect(self.callback_sunat)
     
         self.mainWindow.btnTest.clicked.connect(self.callback_test)
 
         self.mainWindow.show_visual()
         self.mainWindow.showMaximized()
-        #self.update_values_table_habW()
 
         sys.exit(app.exec())
 
@@ -175,13 +169,10 @@ class Controller():
         self.newArqWindow.btnPrepareCreateArq.clicked.connect(self.callback_newArqW_arq_create_prepare)
         self.newArqWindow.btnCreateArq.clicked.connect(self.callback_newArqW_arq_create)
         self.newArqWindow.btnCancelArq.clicked.connect(self.callback_newArqW_arq_cancel)
-
         self.newArqWindow.btnDeleteArq.clicked.connect(self.callback_newArqW_arq_delete)
 
         self.newArqWindow.btnUpdateTimeChecking.clicked.connect(self.callback_newArqW_update_time_checking)
         self.newArqWindow.btnUpdateTimeCheckout.clicked.connect(self.callback_newArqW_update_time_checkout)
-
-        
         self.newArqWindow.btnClearTimeChecking.clicked.connect(self.callback_newArqW_clear_time_checking)
         self.newArqWindow.btnClearTimeCheckout.clicked.connect(self.callback_newArqW_clear_time_checkout)
 
@@ -198,14 +189,12 @@ class Controller():
 
         self.newHabRegWindow.btnUpdateTimeHabRegStart.clicked.connect(self.callback_newHabRegW_update_time_start)
         self.newHabRegWindow.btnUpdateTimeHabRegEnd.clicked.connect(self.callback_newHabRegW_update_time_end)
-        
         self.newHabRegWindow.btnClearTimeHabRegStart.clicked.connect(self.callback_newHabRegW_clear_time_start)
         self.newHabRegWindow.btnClearTimeHabRegEnd.clicked.connect(self.callback_newHabRegW_clear_time_end)
 
 
     def update_all_subwindows(self): 
         for sub in self.mainWindow.mdiAreaMain.subWindowList():
-            #sub.move(sub.pos().x()+10, sub.pos().y()+10)
             sub.adjustSize()
             sub.repaint()
             sub.activateWindow()
