@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="F:/HGP_PROGRAM/hgp_prod.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="2570"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,8:mainArquiler"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="Arquiler" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="49"/><column index="2" value="51"/><column index="3" value="40"/><column index="4" value="76"/><column index="5" value="48"/><column index="6" value="101"/><column index="7" value="95"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Habitacion_cama" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="85"/><column index="2" value="59"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Habitacion_caracteristica" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="80"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Habitacion_caracteristica_join" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="51"/><column index="2" value="80"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1">CREATE TABLE &quot;Habitacion_caracteristica&quot; (
+	&quot;id_hab_car&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;value&quot;	TEXT NOT NULL UNIQUE,
+	PRIMARY KEY(&quot;id_hab_car&quot;)
+);
+
+CREATE TABLE &quot;Habitacion_cama&quot; (
+	&quot;id_hab_cam&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;value&quot;	TEXT NOT NULL UNIQUE,
+	PRIMARY KEY(&quot;id_hab_cam&quot;)
+);
+
+CREATE TABLE &quot;Habitacion_caracteristica_join&quot; (
+	&quot;id_hab&quot;	TEXT NOT NULL,
+	&quot;id_hab_car&quot;	INTEGER NOT NULL,
+	FOREIGN KEY(&quot;id_hab_car&quot;) REFERENCES &quot;Habitacion_caracteristica&quot;(&quot;id_hab_car&quot;),
+	FOREIGN KEY(&quot;id_hab&quot;) REFERENCES &quot;Habitacion&quot;(&quot;id_hab&quot;)
+);
+
+CREATE TABLE &quot;Habitacion_cama_join&quot; (
+	&quot;id_hab&quot;	TEXT NOT NULL,
+	&quot;id_hab_cam&quot;	INTEGER NOT NULL,
+	FOREIGN KEY(&quot;id_hab&quot;) REFERENCES &quot;Habitacion&quot;(&quot;id_hab&quot;),
+	FOREIGN KEY(&quot;id_hab_cam&quot;) REFERENCES &quot;Habitacion_cama&quot;(&quot;id_hab_cam&quot;)
+);
+
+CREATE TABLE &quot;Habitacion&quot; (
+	&quot;id_hab&quot;	TEXT NOT NULL UNIQUE,
+	&quot;nombre&quot;	TEXT,
+	&quot;descripcion&quot;	TEXT,
+	&quot;precioReferencia&quot;	NUMERIC,
+	&quot;piso&quot;	INTEGER NOT NULL,
+	PRIMARY KEY(&quot;id_hab&quot;)
+);
+
+CREATE TABLE &quot;Habitacion_estado&quot; (
+	&quot;id_hab_est&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;value&quot;	TEXT NOT NULL UNIQUE,
+	PRIMARY KEY(&quot;id_hab_est&quot;)
+);
+
+CREATE TABLE &quot;Habitaciones_registro&quot; (
+	&quot;id_hab_reg&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;id_hab&quot;	TEXT NOT NULL,
+	&quot;id_hab_est&quot;	INTEGER NOT NULL,
+	&quot;fechaInicio&quot;	TEXT NOT NULL,
+	&quot;horaInicio&quot;	TEXT NOT NULL,
+	&quot;fechaFin&quot;	TEXT NOT NULL,
+	&quot;horaFin&quot;	TEXT NOT NULL,
+	FOREIGN KEY(&quot;id_hab_est&quot;) REFERENCES &quot;Habitacion_estado&quot;(&quot;id_hab_est&quot;),
+	FOREIGN KEY(&quot;id_hab&quot;) REFERENCES &quot;Habitacion&quot;(&quot;id_hab&quot;),
+	PRIMARY KEY(&quot;id_hab_reg&quot; AUTOINCREMENT)
+);
+
+CREATE TABLE &quot;Empleado&quot; (
+	&quot;id_emp&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;nombre&quot;	TEXT NOT NULL,
+	&quot;apellido&quot;	TEXT NOT NULL,
+	&quot;contrasena&quot;	TEXT NOT NULL,
+	PRIMARY KEY(&quot;id_emp&quot;)
+);
+
+CREATE TABLE &quot;Cliente&quot; (
+	&quot;id_cli&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;nDocumento&quot;	TEXT UNIQUE,
+	&quot;nombre&quot;	TEXT,
+	&quot;apellido&quot;	TEXT,
+	&quot;datosAdicionales&quot;	TEXT,
+	&quot;celular&quot;	TEXT,
+	PRIMARY KEY(&quot;id_cli&quot; AUTOINCREMENT)
+);
+
+CREATE TABLE &quot;Arquiler&quot; (
+	&quot;id_arq&quot;	INTEGER NOT NULL UNIQUE,
+	&quot;id_hab&quot;	TEXT NOT NULL,
+	&quot;id_cli&quot;	INTEGER NOT NULL,
+	&quot;precioReal&quot;	NUMERIC NOT NULL,
+	&quot;deuda&quot;	NUMERIC,
+	&quot;fechaChecking&quot;	TEXT,
+	&quot;horaChecking&quot;	TEXT,
+	FOREIGN KEY(&quot;id_hab&quot;) REFERENCES &quot;Habitacion&quot;(&quot;id_hab&quot;),
+	FOREIGN KEY(&quot;id_cli&quot;) REFERENCES &quot;Cliente&quot;(&quot;id_cli&quot;),
+	PRIMARY KEY(&quot;id_arq&quot; AUTOINCREMENT)
+);
+
+
+
+INSERT INTO Habitacion_caracteristica (id_hab_car, value)
+VALUES
+('1', 'agua caliente'),
+('2', 'cable'),
+('3', 'netflix'),
+('4', 'vista de ventana'),
+('5', 'internet');
+
+
+INSERT INTO Habitacion_cama (id_hab_cam, value)
+VALUES
+('1', '1 plaza'),
+('2', '1.5 plaza'),
+('3', '2 plaza'),
+('4', '2.5 plaza');
+
+INSERT INTO Habitacion_estado (id_hab_est, value)
+VALUES
+('0', 'No disponible'),
+('1', 'Libre'),
+('2', 'Ocupado'),
+('3', 'Reservado'),
+('4', 'Solicita Limpieza'),
+('5', 'Falta Limpieza'),
+('6', 'Limpiando SL'),
+('7', 'Limpiando FL');
+
+INSERT INTO Habitacion (id_hab, nombre, descripcion, precioReferencia, piso)
+VALUES
+('21', 'Matrimonial Queen', 'Comodo y abrigado', '200', '2'),
+('22', 'Matrimonial', 'Comodo y abrigado', '180', '2'),
+('23', 'Estandar', 'Comodo y abrigado', '120', '2'),
+('24', 'Matrimonial Queen', 'Comodo y abrigado', '200', '2'),
+('25', 'Familiar (dos camas)', 'Comodo y abrigado', '210', '2'),
+
+('31', 'Matrimonial Queen', 'Comodo y limpio', '200', '3'),
+('32', 'Matrimonial', 'Comodo y limpio', '180', '3'),
+('33', 'Estandar', 'Comodo y limpio', '120', '3'),
+('34', 'Matrimonial Queen', 'Comodo y limpio', '200', '3'),
+('35', 'Familiar (dos camas)', 'Comodo y limpio', '210', '3'),
+
+('41', 'Matrimonial Queen', 'Comodo y limpio', '200', '4'),
+('42', 'Matrimonial', 'Comodo y limpio', '180', '4'),
+('43', 'Matrimonial', 'Comodo y limpio', '180', '4'),
+('44', 'Matrimonial Queen', 'Comodo y limpio', '200', '4'),
+('45', 'Estandar', 'Comodo y limpio', '120', '4'),
+('46', 'Estandar', 'Comodo y limpio', '120', '4'),
+
+('A', 'Matrimonial Queen', 'Comodo y limpio', '200', '5'),
+('B', 'Matrimonial', 'Comodo y limpio', '180', '5'),
+('C', 'Matrimonial', 'Comodo y limpio', '180', '5'),
+('D', 'Matrimonial Queen', 'Comodo y limpio', '200', '5'),
+('E', 'Estandar', 'Comodo y limpio', '120', '5'),
+('F', 'Estandar', 'Comodo y limpio', '120', '5');
+
+INSERT INTO Habitacion_caracteristica_join (id_hab, id_hab_car)
+VALUES
+('21', '1'),
+('21', '2'),
+('22', '1'),
+('22', '3'),
+('23', '1'),
+('23', '5'),
+('24', '1'),
+('24', '4'),
+('25', '1'),
+('25', '2'),
+('31', '2'),
+('31', '5'),
+('32', '3'),
+('32', '2'),
+('33', '1'),
+('33', '2'),
+('34', '4'),
+('34', '2'),
+('35', '1'),
+('35', '2'),
+('41', '5'),
+('41', '2'),
+('42', '3'),
+('42', '2'),
+('43', '4'),
+('43', '2'),
+('44', '1'),
+('44', '3'),
+('45', '1'),
+('45', '2'),
+('46', '1'),
+('A', '2'),
+('A', '1'),
+('B', '2'),
+('B', '3'),
+('C', '2'),
+('C', '1'),
+('D', '5'),
+('D', '1'),
+('E', '2'),
+('E', '5'),
+('F', '2'),
+('F', '4');
+
+
+INSERT INTO Habitacion_cama_join (id_hab, id_hab_cam)
+VALUES
+('21', '1'),
+('21', '2'),
+('22', '1'),
+('22', '3'),
+('23', '1'),
+('23', '4'),
+('24', '1'),
+('24', '4'),
+('25', '1'),
+('25', '2'),
+('31', '2'),
+('31', '3'),
+('32', '3'),
+('32', '2'),
+('33', '1'),
+('33', '2'),
+('34', '4'),
+('34', '2'),
+('35', '1'),
+('35', '2'),
+('41', '3'),
+('41', '2'),
+('42', '3'),
+('42', '2'),
+('43', '4'),
+('43', '2'),
+('44', '1'),
+('44', '3'),
+('45', '1'),
+('45', '2'),
+('46', '1'),
+('A', '2'),
+('A', '1'),
+('B', '2'),
+('B', '3'),
+('C', '2'),
+('C', '1'),
+('D', '2'),
+('D', '1'),
+('E', '2'),
+('E', '3'),
+('F', '2'),
+('F', '4');
+
+INSERT INTO Habitaciones_registro (id_hab_reg, id_hab, id_hab_est, fechaInicio, horaInicio, fechaFin, horaFin)
+VALUES
+('1', '22', '4', '10/01/2024', '09:00:00', '11/01/2024', '10:00:00'),
+('2', '23', '4', '11/01/2024', '09:10:00', '12/01/2024', '10:10:00'),
+('3', 'A', '2', '13/01/2024', '09:20:00', '14/01/2024', '10:20:00'),
+('4', 'B', '5', '14/01/2024', '09:30:00', '15/01/2024', '10:30:00');
+
+INSERT INTO Empleado (id_emp, nombre, apellido, contrasena)
+VALUES
+('1', 'Johan', 'Velasquez', 'hgp'),
+('2', 'Ce', 'Aquino', 'hgp'),
+('3', 'Lucho', 'L', 'hgp'),
+('4', 'Roy', 'R', 'hgp');
+
+INSERT INTO Cliente (id_cli, nDocumento, nombre, apellido, datosAdicionales, celular)
+VALUES
+('1', '6488245', 'Juan', 'Gonzales', 'Saco azul','992533675'),
+('2', '4488245', 'Manuel', 'Tupac', 'Es molesto','592533675'),
+('3', '2488245', 'Carlos', 'Saldanez', 'Necesita atencion especial','292533675'),
+('4', '7488245', 'Alonso', 'Cerro', 'Saco rojo','192533675');
+
+INSERT INTO Arquiler (id_arq, id_hab, id_cli, precioReal, deuda, fechaChecking, horaChecking)
+VALUES
+('1', '31', '1', '100', '10', '19/01/2024', '09:00:00'),
+('2', '22', '3', '140', '20', '20/01/2024', '10:00:00'),
+('3', 'A', '2', '120', '0', '21/01/2024', '11:00:00'),
+('4', 'C', '4', '200', '12','22/01/2024', '19:00:00');
+</sql><current_tab id="0"/></tab_sql></sqlb_project>

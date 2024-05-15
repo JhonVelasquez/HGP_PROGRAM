@@ -1,0 +1,58 @@
+Habitacion_caracteristica
+	id_hab_car 
+	value
+Habitacion_cama
+	id_hab_cam
+	value
+Habitacion_estado
+	id_hab_est
+	value
+Habitacion
+	id_hab
+	nombre
+	descripcion
+	precioReferencia
+
+Habitacion_caracteristica_join
+	id_hab_car_join
+	id_hab
+	id_hab_car
+
+Habitacion_cama_join
+	id_hab_cam_join
+	id_hab
+	id_hab_cam
+
+Habitaciones_registro
+	id_hab_reg
+	id_hab
+	id_hab_est
+	fechaInicio
+	horaInicio
+	fechaFin
+	horaFin
+
+Empleado
+	id_emp
+	nombre
+	apellido
+
+Cliente
+	id_cli
+	nDocumento
+	nombre
+	apellido
+	datosAdicionales
+	celular
+
+Arquiler
+	id_arq
+	id_hab
+	id_cli
+	precioReal
+	deuda
+	fechaChecking
+	horaChecking
+	
+
+
