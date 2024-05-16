@@ -132,7 +132,7 @@ class Controller():
         self.cliWindow.btnNext.clicked.connect(self.callback_cliW_next)
 
     def habRegW_init(self, data_front = None, data_back = None):
-        self.habRegWindow = HabRegWindow(data_front= data_front, data_back= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names)
+        self.habRegWindow = HabRegWindow(data_front= data_front, win_data= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names)
         self.habRegWindow.btnUpdate.clicked.connect(self.callback_habRegW_update)
         self.habRegWindow.btnNewEdit.clicked.connect(self.callback_habRegW_openNewHabRegW)
 

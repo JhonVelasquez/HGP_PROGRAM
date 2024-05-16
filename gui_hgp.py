@@ -61,9 +61,8 @@ class GeneralWindow(QtWidgets.QWidget):
 
     table_column_names = None
     data_front = None
-    data_back = None
 
-    def __init__(self, win_data: Window_data = None, data_front: Window_data = None, data_back: Window_data = None, d_Hab_est:dict = None, *args, **kwargs):
+    def __init__(self, win_data: Window_data = None, data_front: Window_data = None, d_Hab_est:dict = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         uic.loadUi(win_data.path_gui, self)
         self.setWindowTitle(win_data.title_window)
@@ -79,9 +78,6 @@ class GeneralWindow(QtWidgets.QWidget):
         #migration
         if (data_front == None): self.data_front = Window_data()
         else: self.data_front = data_front
-        
-        if (data_back == None): self.data_back = Window_data()
-        else: self.data_back = data_back
 
         #loading graphics
         self.updateUsingWindowData()
@@ -92,7 +88,7 @@ class GeneralWindow(QtWidgets.QWidget):
 
     def clearWindow(self):
         self.data_front.reset()
-        self.data_back.reset()
+        self.data.reset()
         self.updateUsingWindowData()
 
     def contextMenuEvent(self, event):
@@ -783,8 +779,8 @@ class ClientWindow(GeneralWindow):
 
 class HabRegWindow(GeneralWindow):
 
-    def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, *args, **kwargs):
-        win_data = Window_data()
+    def __init__(self, data_front: Window_data, win_data: Window_data, d_Hab_est, table_column_names, *args, **kwargs):
+        if(win_data==None): win_data = Window_data()
         win_data.path_gui = './ui/hab_reg.ui'
         win_data.title_window = "Registros de habitación"
         win_data.has_table = True
@@ -797,49 +793,50 @@ class HabRegWindow(GeneralWindow):
 
         self.table_column_names = table_column_names
 
-        super().__init__(win_data=win_data,d_Hab_est=d_Hab_est,data_front=data_front,data_back=data_back,*args, **kwargs)
+        super().__init__(win_data=win_data,d_Hab_est=d_Hab_est,data_front=data_front,*args, **kwargs)
 
         self.dateEditStart.setCalendarPopup(True)
         self.loadComboOrder()
 
+
     def updateUsingWindowData(self):      
-        if(self.data_back.page_current == None): self.data_back.page_current = 1
-        self.updateUsingWindowDataBack(self.data_back)
-        self.updateUsingWindowDataFront(self.data_front)
+        if(self.data.page_current == None): self.data.page_current = 1
+        self.updateUsingWindowDataBack()
+        self.updateUsingWindowDataFront()
 
-    def updateUsingWindowDataBack(self, data:Window_data):      
-        self.updatePageLabel(data.page_current)
+    def updateUsingWindowDataBack(self):      
+        self.updatePageLabel(self.data.page_current)
 
-    def updateUsingWindowDataFront(self, data:Window_data):
-        if(data.id_hab_reg == None): self.lineEditID.setText("")
-        else: self.lineEditID.setText(str(data.id_hab_reg))
+    def updateUsingWindowDataFront(self):
+        if(self.data_front.id_hab_reg == None): self.lineEditID.setText("")
+        else: self.lineEditID.setText(str(self.data_front.id_hab_reg))
 
-        if(data.fecha_inicio == None): self.clear_time_start_now()
-        else: self.dateEditStart.setDateTime(data.fecha_inicio)
+        if(self.data_front.fecha_inicio == None): self.clear_time_start_now()
+        else: self.dateEditStart.setDateTime(self.data_front.fecha_inicio)
 
-        if(data.id_hab == None): self.lineEditHabID.setText("")
-        else: self.lineEditHabID.setText(str(data.id_hab))
+        if(self.data_front.id_hab == None): self.lineEditHabID.setText("")
+        else: self.lineEditHabID.setText(str(self.data_front.id_hab))
 
-        if(data.hab_est == None): self.comboBoxState.setCurrentText("")
-        else: self.comboBoxState.setCurrentText(str(data.hab_est))
+        if(self.data_front.hab_est == None): self.comboBoxState.setCurrentText("")
+        else: self.comboBoxState.setCurrentText(str(self.data_front.hab_est))
 
-        if(data.order_type == None): self.comboBoxOrderType.setCurrentText("desc")
-        else: self.comboBoxOrderType.setCurrentText(str(data.order_type))
+        if(self.data_front.order_type == None): self.comboBoxOrderType.setCurrentText("desc")
+        else: self.comboBoxOrderType.setCurrentText(str(self.data_front.order_type))
 
-        if(data.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
-        else: self.comboBoxOrderFeature.setCurrentText(str(data.order_feature))
+        if(self.data_front.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
+        else: self.comboBoxOrderFeature.setCurrentText(str(self.data_front.order_feature))
 
         return 0
     
     def pushFrontDataToBack(self):
         self.getWindowDataFront() #pullgin dataFront from UI
-        self.data_back.id_hab = self.data_front.id_hab
-        self.data_back.fecha_inicio = self.data_front.fecha_inicio
-        self.data_back.id_hab_reg = self.data_front.id_hab_reg
-        self.data_back.hab_est = self.data_front.hab_est
-        self.data_back.id_hab_est = self.data_front.id_hab_est
-        self.data_back.order_feature = self.data_front.order_feature
-        self.data_back.order_type = self.data_front.order_type
+        self.data.id_hab = self.data_front.id_hab
+        self.data.fecha_inicio = self.data_front.fecha_inicio
+        self.data.id_hab_reg = self.data_front.id_hab_reg
+        self.data.hab_est = self.data_front.hab_est
+        self.data.id_hab_est = self.data_front.id_hab_est
+        self.data.order_feature = self.data_front.order_feature
+        self.data.order_type = self.data_front.order_type
 
     def getWindowDataFront(self):
         id_hab_reg = self.lineEditID.text()
@@ -868,7 +865,7 @@ class HabRegWindow(GeneralWindow):
         return self.data_front
 
     def getWindowDataBack(self):
-        return self.data_back
+        return self.data
  
     def set_time_start_now(self):
         self.dateEditStart.setDateTime(QDateTime.currentDateTime())
