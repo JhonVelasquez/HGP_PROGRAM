@@ -114,8 +114,8 @@ class Controller():
         self.habWindow.btnUpdate.clicked.connect(self.callback_habW_update)
         self.habWindow.btnHabReg.clicked.connect(self.callback_habW_openHabRegW)
 
-    def arqW_init(self, window_data = None):
-        self.arqWindow = ArqWindow(window_data)
+    def arqW_init(self, data_back = None):
+        self.arqWindow = ArqWindow(data_back)
         self.arqWindow.btnUpdate.clicked.connect(self.callback_arqW_update)
         self.arqWindow.btnNewEdit.clicked.connect(self.callback_arqW_openNewArqW)
 
@@ -123,8 +123,8 @@ class Controller():
         self.arqWindow.btnNext.clicked.connect(self.callback_arqW_next)
 
 
-    def cliW_init(self, window_data = None):
-        self.cliWindow = ClientWindow(window_data)
+    def cliW_init(self, data_back = None):
+        self.cliWindow = ClientWindow(data_back)
         self.cliWindow.btnUpdate.clicked.connect(self.callback_cliW_update)
         self.cliWindow.btnNewEdit.clicked.connect(self.callback_cliW_openNewCliW)
 
@@ -132,7 +132,7 @@ class Controller():
         self.cliWindow.btnNext.clicked.connect(self.callback_cliW_next)
 
     def habRegW_init(self, data_front = None, data_back = None):
-        self.habRegWindow = HabRegWindow(data_front= data_front, win_data= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names)
+        self.habRegWindow = HabRegWindow(data_front= data_front, data_back= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names)
         self.habRegWindow.btnUpdate.clicked.connect(self.callback_habRegW_update)
         self.habRegWindow.btnNewEdit.clicked.connect(self.callback_habRegW_openNewHabRegW)
 
@@ -556,8 +556,8 @@ class Controller():
 
     ### FUNCTIONS - ARQUILER WINDOW
 
-    def arqW_setup(self, pos_x  = None, pos_y = None, window_data = None):
-        self.arqW_init(window_data)
+    def arqW_setup(self, pos_x  = None, pos_y = None, data_back = None):
+        self.arqW_init(data_back)
         self.arqW_update_values_table()
         self.create_visual_sub_window(self.arqWindow,pos_x, pos_y)
 
@@ -572,10 +572,10 @@ class Controller():
 
             pos_x = self.arqWindow.subWindowRef.pos().x()
             pos_y = self.arqWindow.subWindowRef.pos().y()
-            temp_window_data = self.arqWindow.getWindowData()
+            data_back = self.arqWindow.getWindowDataBack()
 
             self.mainWindow.mdiAreaMain.removeSubWindow(self.arqWindow.subWindowRef)
-            self.arqW_setup(pos_x, pos_y, temp_window_data)
+            self.arqW_setup(pos_x, pos_y, data_back)
 
             if(foc == "True"):
                 self.arqWindow.subWindowRef.setFocus()
@@ -589,8 +589,8 @@ class Controller():
     
     ### FUNCTIONS - CLIENT WINDOW
 
-    def cliW_setup(self, pos_x  = None, pos_y = None, window_data = None):
-        self.cliW_init(window_data)
+    def cliW_setup(self, pos_x  = None, pos_y = None, data_back = None):
+        self.cliW_init(data_back)
         self.cliW_update_values_table()
         self.create_visual_sub_window(self.cliWindow,pos_x, pos_y)
 
@@ -605,10 +605,10 @@ class Controller():
 
             pos_x = self.cliWindow.subWindowRef.pos().x()
             pos_y = self.cliWindow.subWindowRef.pos().y()
-            temp_window_data = self.cliWindow.getWindowData()
+            data_back = self.cliWindow.getWindowDataBack()
 
             self.mainWindow.mdiAreaMain.removeSubWindow(self.cliWindow.subWindowRef)
-            self.cliW_setup(pos_x , pos_y, temp_window_data)
+            self.cliW_setup(pos_x , pos_y, data_back)
 
             if(foc == "True"):
                 self.cliWindow.subWindowRef.setFocus()

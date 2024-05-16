@@ -55,29 +55,29 @@ class Window_data():
 class GeneralWindow(QtWidgets.QWidget):
     isCreated = False
     subWindowRef = None
-    data = None
+    data_back = None
     newCliFuncs = None
     context_menu = None
 
     table_column_names = None
     data_front = None
 
-    def __init__(self, win_data: Window_data = None, data_front: Window_data = None, d_Hab_est:dict = None, *args, **kwargs):
+    def __init__(self, data_back: Window_data = None, data_front: Window_data = None, d_Hab_est:dict = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        uic.loadUi(win_data.path_gui, self)
-        self.setWindowTitle(win_data.title_window)
+        uic.loadUi(data_back.path_gui, self)
+        self.setWindowTitle(data_back.title_window)
         icon = QtGui.QIcon("./src/logoHGP.png")
         self.setWindowIcon(icon)
         self.isCreated = False
-        if (win_data == None): self.data = Window_data()
-        else: self.data = win_data
 
-        if(self.data.has_client_section==True): self.newCliFuncs = NewClientFunctions()
-        if(self.data.has_combo_estados == True): self.loadComboState(d_Hab_est)
-
-        #migration
+        if (data_back == None): self.data_back = Window_data()
+        else: self.data_back = data_back
+        
         if (data_front == None): self.data_front = Window_data()
         else: self.data_front = data_front
+
+        if(self.data_back.has_client_section==True): self.newCliFuncs = NewClientFunctions()
+        if(self.data_back.has_combo_estados == True): self.loadComboState(d_Hab_est)
 
         #loading graphics
         self.updateUsingWindowData()
@@ -86,9 +86,31 @@ class GeneralWindow(QtWidgets.QWidget):
         clearWindow = self.context_menu.addAction("Limpiar ventana")
         clearWindow.triggered.connect(self.clearWindow)
 
+
+    def updateUsingWindowData(self):      
+        if(self.data_back.page_current == None): self.data_back.page_current = 1
+        self.updateUsingWindowDataBack()
+        self.updateUsingWindowDataFront()
+
+    def updateUsingWindowDataBack(self):      
+        return 0
+    
+    def updateUsingWindowDataFront(self):
+        return 0
+    
+    def pushFrontDataToBack(self):
+        return 0
+    
+    def getWindowDataFront(self):
+        return 0
+    
+    def getWindowDataBack(self):
+        return self.data_back
+        
+
     def clearWindow(self):
         self.data_front.reset()
-        self.data.reset()
+        self.data_back.reset()
         self.updateUsingWindowData()
 
     def contextMenuEvent(self, event):
@@ -104,7 +126,13 @@ class GeneralWindow(QtWidgets.QWidget):
             event.ignore()
 
     def show_visual(self, focus = True):
-        short_show(self, focus)
+        self.show()
+        #self.showNormal()
+        #self.setVisible(True)
+        if focus: self.setFocus()
+        #self.activateWindow()
+        #self.raise_()
+        #self.blockSignals(False)
 
     def resetTableView(self):
         self.tableContent.reset()
@@ -113,29 +141,16 @@ class GeneralWindow(QtWidgets.QWidget):
     def setTableViewPost(self):
         self.tableContent.setSortingEnabled(True)
 
-    #data mangement
-    def getWindowData(self):
-        """ id_hab = self.lineEditHab.text()
-        if (id_hab == ""):
-           id_hab = None
-        self.data.id_hab = id_hab """
-
-        return self.data
     
-    #If there is page_current and page_next
-    def updateUsingWindowData(self):
-        if(self.data.has_pages):
-            if(self.data.page_current == None): self.data.page_current = 1
-            self.updatePageLabel(self.data.page_current)
-    
+    #If there is page_current and page_next    
     def getSizePage(self):
-        return self.data.page_size
+        return self.data_back.page_size
 
     def getCurrentPage(self):
-        return self.data.page_current
+        return self.data_back.page_current
     
     def setCurrentPage(self, page: int):
-        self.data.page_current = page
+        self.data_back.page_current = page
         self.updatePageLabel(page)
  
     def nextPage(self):
@@ -165,39 +180,40 @@ class GeneralWindow(QtWidgets.QWidget):
     
     def setInf_cli(self, mssg):
         return self.newCliFuncs.setInf(self, mssg) 
+    
     #combo box estado
     def loadComboState(self, d_Hab_est):
         self.comboBoxState.clear()
         for hab_est in d_Hab_est.values():
-            if(self.data.combo_estados_in_arquiler == True):
+            if(self.data_back.combo_estados_in_arquiler == True):
                 if(hab_est.is_in_arquiler == "True"):
                     self.comboBoxState.addItem(hab_est.value)
             else:
                 self.comboBoxState.addItem(hab_est.value)
 
-        if(self.data.extra_combo_estados != None):
-            self.comboBoxState.addItem(self.data.extra_combo_estados)
-            self.comboBoxState.setCurrentText(self.data.extra_combo_estados)
+        if(self.data_back.extra_combo_estados != None):
+            self.comboBoxState.addItem(self.data_back.extra_combo_estados)
+            self.comboBoxState.setCurrentText(self.data_back.extra_combo_estados)
 
 class MainWindow(GeneralWindow):
     
     def __init__(self, *args, **kwargs):
-        win_data = Window_data()
-        win_data.path_gui = './ui/main_widget.ui'
-        win_data.title_window = "HGP"
-        win_data.has_table = True
-        win_data.has_pages = False
-        super().__init__(win_data=win_data,*args, **kwargs)    
+        data_back = Window_data()
+        data_back.path_gui = './ui/main_widget.ui'
+        data_back.title_window = "HGP"
+        data_back.has_table = True
+        data_back.has_pages = False
+        super().__init__(data_back=data_back,*args, **kwargs)    
     
 class HabWindow(GeneralWindow):
 
     def __init__(self, *args, **kwargs):
-        win_data = Window_data()
-        win_data.path_gui = './ui/hab.ui'
-        win_data.title_window = "Habitaciones"
-        win_data.has_table = True
-        win_data.has_pages = False
-        super().__init__(win_data=win_data,*args, **kwargs)
+        data_back = Window_data()
+        data_back.path_gui = './ui/hab.ui'
+        data_back.title_window = "Habitaciones"
+        data_back.has_table = True
+        data_back.has_pages = False
+        super().__init__(data_back=data_back,*args, **kwargs)
 
     def updateTableView(self, d_Habitaciones: dict[str, Habitacion], columnNames, d_Hab_est, d_Hab_cam, d_Hab_car):
 
@@ -277,18 +293,15 @@ class HabWindow(GeneralWindow):
         
         self.setTableViewPost()
 
-    def setTableView(self, d_Habitaciones: dict[str, Habitacion], columnNames, d_Hab_est, d_Hab_cam, d_Hab_car):
-        self.updateTableView(d_Habitaciones, columnNames, d_Hab_est, d_Hab_cam, d_Hab_car)
-
 class ArqWindow(GeneralWindow):
 
-    def __init__(self, win_data: Window_data, *args, **kwargs):
-        if(win_data == None): win_data = Window_data()
-        win_data.path_gui = './ui/arq.ui'
-        win_data.title_window = "Arquileres"
-        win_data.has_table = True
-        win_data.has_pages = True
-        super().__init__(win_data=win_data,*args, **kwargs)
+    def __init__(self, data_back: Window_data, *args, **kwargs):
+        if(data_back == None): data_back = Window_data()
+        data_back.path_gui = './ui/arq.ui'
+        data_back.title_window = "Arquileres"
+        data_back.has_table = True
+        data_back.has_pages = True
+        super().__init__(data_back=data_back,*args, **kwargs)
         
     def updateTableView(self, d_Arquiler: dict[str, Arquiler], columnNames, d_Empleado, d_Clientes):
         #self.resetTableView()
@@ -337,23 +350,20 @@ class ArqWindow(GeneralWindow):
 
         self.setTableViewPost()
 
-    def setTableView(self, d_Arquiler: dict[str, Arquiler], columnNames, d_Empleado):
-        self.updateTableView(d_Arquiler, columnNames, d_Empleado)    
-
 class NewArqWindow(GeneralWindow):
 
     def __init__(self, d_Hab_est, *args, **kwargs):
-        win_data = Window_data()
-        win_data.path_gui = './ui/new_arq.ui'
-        win_data.title_window = "Nuevo arquiler"
-        win_data.has_table = False
-        win_data.has_pages = False
-        win_data.has_client_section = True
+        data_back = Window_data()
+        data_back.path_gui = './ui/new_arq.ui'
+        data_back.title_window = "Nuevo arquiler"
+        data_back.has_table = False
+        data_back.has_pages = False
+        data_back.has_client_section = True
 
-        win_data.has_combo_estados = True
-        win_data.extra_combo_estados = "(Estado no válido)"
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = "(Estado no válido)"
 
-        super().__init__(win_data=win_data,d_Hab_est=d_Hab_est,*args, **kwargs)
+        super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
 
         self.set_time_checking_now()
         self.set_time_checkout_now()
@@ -572,18 +582,18 @@ class NewArqWindow(GeneralWindow):
 class NewHabRegWindow(GeneralWindow):
 
     def __init__(self, d_Hab_est, *args, **kwargs):
-        win_data = Window_data()
-        win_data.path_gui = './ui/new_hab_reg.ui'
-        win_data.title_window = "Nuevo registro de estado"
-        win_data.has_table = False
-        win_data.has_pages = False
-        win_data.has_client_section = False
+        data_back = Window_data()
+        data_back.path_gui = './ui/new_hab_reg.ui'
+        data_back.title_window = "Nuevo registro de estado"
+        data_back.has_table = False
+        data_back.has_pages = False
+        data_back.has_client_section = False
 
-        win_data.has_combo_estados = True
-        win_data.extra_combo_estados = None
-        win_data.combo_estados_in_arquiler = False
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = None
+        data_back.combo_estados_in_arquiler = False
 
-        super().__init__(win_data=win_data,d_Hab_est=d_Hab_est,*args, **kwargs)
+        super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
 
         self.set_time_start_now()
         self.set_time_end_now()
@@ -723,18 +733,18 @@ class NewHabRegWindow(GeneralWindow):
     
 class ClientWindow(GeneralWindow):
 
-    def __init__(self, win_data, *args, **kwargs):
-        if(win_data == None): win_data = Window_data()
-        win_data.path_gui = './ui/client.ui'
-        win_data.title_window = "Clientes"
-        win_data.has_table = True
-        win_data.has_pages = True
-        win_data.has_client_section = True
+    def __init__(self, data_back, *args, **kwargs):
+        if(data_back == None): data_back = Window_data()
+        data_back.path_gui = './ui/client.ui'
+        data_back.title_window = "Clientes"
+        data_back.has_table = True
+        data_back.has_pages = True
+        data_back.has_client_section = True
 
-        win_data.has_combo_estados = False
-        win_data.extra_combo_estados = "(Estado no válido)"
+        data_back.has_combo_estados = False
+        data_back.extra_combo_estados = "(Estado no válido)"
 
-        super().__init__(win_data=win_data,*args, **kwargs)
+        super().__init__(data_back=data_back,*args, **kwargs)
 
     def updateTableView(self, d_Clientes: dict[str, Cliente], columnNames):
 
@@ -774,38 +784,31 @@ class ClientWindow(GeneralWindow):
 
         self.setTableViewPost()
 
-    def setTableView(self, d_Clientes: dict[str, Cliente], columnNames):
-        self.updateTableView(d_Clientes, columnNames)    
-
 class HabRegWindow(GeneralWindow):
 
-    def __init__(self, data_front: Window_data, win_data: Window_data, d_Hab_est, table_column_names, *args, **kwargs):
-        if(win_data==None): win_data = Window_data()
-        win_data.path_gui = './ui/hab_reg.ui'
-        win_data.title_window = "Registros de habitación"
-        win_data.has_table = True
-        win_data.has_pages = True
-        win_data.has_client_section = False
+    def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, *args, **kwargs):
+        if(data_back==None): data_back = Window_data()
+        data_back.path_gui = './ui/hab_reg.ui'
+        data_back.title_window = "Registros de habitación"
+        data_back.has_table = True
+        data_back.has_pages = True
+        data_back.has_client_section = False
 
-        win_data.has_combo_estados = True
-        win_data.extra_combo_estados = ""
-        win_data.combo_estados_in_arquiler = False
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = ""
+        data_back.combo_estados_in_arquiler = False
 
         self.table_column_names = table_column_names
 
-        super().__init__(win_data=win_data,d_Hab_est=d_Hab_est,data_front=data_front,*args, **kwargs)
+        super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,data_front=data_front,*args, **kwargs)
 
         self.dateEditStart.setCalendarPopup(True)
         self.loadComboOrder()
 
-
-    def updateUsingWindowData(self):      
-        if(self.data.page_current == None): self.data.page_current = 1
-        self.updateUsingWindowDataBack()
-        self.updateUsingWindowDataFront()
-
     def updateUsingWindowDataBack(self):      
-        self.updatePageLabel(self.data.page_current)
+        if(self.data_back.has_pages):
+            if(self.data_back.page_current == None): self.data_back.page_current = 1
+            self.updatePageLabel(self.data_back.page_current)
 
     def updateUsingWindowDataFront(self):
         if(self.data_front.id_hab_reg == None): self.lineEditID.setText("")
@@ -825,18 +828,16 @@ class HabRegWindow(GeneralWindow):
 
         if(self.data_front.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
         else: self.comboBoxOrderFeature.setCurrentText(str(self.data_front.order_feature))
-
-        return 0
     
     def pushFrontDataToBack(self):
         self.getWindowDataFront() #pullgin dataFront from UI
-        self.data.id_hab = self.data_front.id_hab
-        self.data.fecha_inicio = self.data_front.fecha_inicio
-        self.data.id_hab_reg = self.data_front.id_hab_reg
-        self.data.hab_est = self.data_front.hab_est
-        self.data.id_hab_est = self.data_front.id_hab_est
-        self.data.order_feature = self.data_front.order_feature
-        self.data.order_type = self.data_front.order_type
+        self.data_back.id_hab = self.data_front.id_hab
+        self.data_back.fecha_inicio = self.data_front.fecha_inicio
+        self.data_back.id_hab_reg = self.data_front.id_hab_reg
+        self.data_back.hab_est = self.data_front.hab_est
+        self.data_back.id_hab_est = self.data_front.id_hab_est
+        self.data_back.order_feature = self.data_front.order_feature
+        self.data_back.order_type = self.data_front.order_type
 
     def getWindowDataFront(self):
         id_hab_reg = self.lineEditID.text()
@@ -864,9 +865,6 @@ class HabRegWindow(GeneralWindow):
         self.data_front.order_feature = order_feature
         return self.data_front
 
-    def getWindowDataBack(self):
-        return self.data
- 
     def set_time_start_now(self):
         self.dateEditStart.setDateTime(QDateTime.currentDateTime())
 
@@ -921,23 +919,20 @@ class HabRegWindow(GeneralWindow):
 
         self.setTableViewPost()
 
-    def setTableView(self, d_Hab_Reg: dict[str, Habitaciones_registro], d_Empleado):
-        self.updateTableView(d_Hab_Reg, d_Empleado)    
-
 class NewClientWindow(GeneralWindow):
     
     def __init__(self, *args, **kwargs):
-        win_data = Window_data()
-        win_data.path_gui = './ui/new_client.ui'
-        win_data.title_window = "Nuevo cliente"
-        win_data.has_table = False
-        win_data.has_pages = False
-        win_data.has_client_section = True
+        data_back = Window_data()
+        data_back.path_gui = './ui/new_client.ui'
+        data_back.title_window = "Nuevo cliente"
+        data_back.has_table = False
+        data_back.has_pages = False
+        data_back.has_client_section = True
 
-        win_data.has_combo_estados = False
-        win_data.extra_combo_estados = None
+        data_back.has_combo_estados = False
+        data_back.extra_combo_estados = None
 
-        super().__init__(win_data=win_data,*args, **kwargs)
+        super().__init__(data_back=data_back,*args, **kwargs)
             
 class NewClientFunctions():
     def fillData(self, widg, c: Cliente):
@@ -1036,17 +1031,13 @@ class TestWindow(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def show_visual(self, focus = True):
-        short_show(self, focus)
+        self.show()
+        #self.showNormal()
+        #self.setVisible(True)
+        if focus: self.setFocus()
+        #self.activateWindow()
+        #self.raise_()
+        #self.blockSignals(False)
 
-
-def short_show(s, focus = True):
-    s.show()
-    #s.showNormal()
-    #s.setVisible(True)
-    if focus: s.setFocus()
-    #s.activateWindow()
-    #s.raise_()
-    #s.blockSignals(False)
-    return 0
 
     QTableWidget.style
