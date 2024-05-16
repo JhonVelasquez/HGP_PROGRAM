@@ -516,7 +516,6 @@ class DataBase():
         
     def get_dic_table_registro(self,id_hab_reg = None, id_hab_est = None, id_hab = None, n_last = None, dateInicio:datetime = None, page_size = None, page_current = None, maximum_date_inicio:datetime = None, order_by = None, inverted = False):
         try:
-            print("Getting hab_Reg from db" + str(datetime.now()))
             self.open_session()
             result_query = self.session.query(Habitaciones_registro)
 
