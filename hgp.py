@@ -89,13 +89,13 @@ class Controller():
 
         self.currentEmpleadoID = 5
 
-        self.init_habW()   
-        self.init_cliW()
-        self.init_habRegW()
-        self.init_newCliW()
-        self.init_arqW()
-        self.init_newArqW()
-        self.init_newHabRegW()
+        self.habW_init()   
+        self.cliW_init()
+        self.habRegW_init()
+        self.newCliW_init()
+        self.arqW_init()
+        self.newArqW_init()
+        self.newHabRegW_init()
 
         self.mainWindow.btnHab.clicked.connect(self.callback_mainW_openHabW)
         self.mainWindow.btnArq.clicked.connect(self.callback_mainW_openArqW)
@@ -109,12 +109,12 @@ class Controller():
 
         sys.exit(app.exec())
 
-    def init_habW(self):
+    def habW_init(self):
         self.habWindow = HabWindow()
         self.habWindow.btnUpdate.clicked.connect(self.callback_habW_update)
         self.habWindow.btnHabReg.clicked.connect(self.callback_habW_openHabRegW)
 
-    def init_arqW(self, window_data = None):
+    def arqW_init(self, window_data = None):
         self.arqWindow = ArqWindow(window_data)
         self.arqWindow.btnUpdate.clicked.connect(self.callback_arqW_update)
         self.arqWindow.btnNewEdit.clicked.connect(self.callback_arqW_openNewArqW)
@@ -123,7 +123,7 @@ class Controller():
         self.arqWindow.btnNext.clicked.connect(self.callback_arqW_next)
 
 
-    def init_cliW(self, window_data = None):
+    def cliW_init(self, window_data = None):
         self.cliWindow = ClientWindow(window_data)
         self.cliWindow.btnUpdate.clicked.connect(self.callback_cliW_update)
         self.cliWindow.btnNewEdit.clicked.connect(self.callback_cliW_openNewCliW)
@@ -131,7 +131,7 @@ class Controller():
         self.cliWindow.btnPrev.clicked.connect(self.callback_cliW_prev)
         self.cliWindow.btnNext.clicked.connect(self.callback_cliW_next)
 
-    def init_habRegW(self, data_front = None, data_back = None):
+    def habRegW_init(self, data_front = None, data_back = None):
         self.habRegWindow = HabRegWindow(data_front= data_front, data_back= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names)
         self.habRegWindow.btnUpdate.clicked.connect(self.callback_habRegW_update)
         self.habRegWindow.btnNewEdit.clicked.connect(self.callback_habRegW_openNewHabRegW)
@@ -142,7 +142,7 @@ class Controller():
         self.habRegWindow.btnUpdateTimeStart.clicked.connect(self.callback_habRegW_update_time_start)     
         self.habRegWindow.btnClearTimeStart.clicked.connect(self.callback_habRegW_clear_time_start)
 
-    def init_newCliW(self):
+    def newCliW_init(self):
         self.newCliWindow = NewClientWindow()
         self.newCliWindow.btnSearchClient.clicked.connect(self.callback_newCliW_search)
         self.newCliWindow.btnUpdateClient.clicked.connect(self.callback_newCliW_update)
@@ -150,7 +150,7 @@ class Controller():
         self.newCliWindow.btnDeleteClient.clicked.connect(self.callback_newCliW_delete)
         self.newCliWindow.btnCancelClient.clicked.connect(self.callback_newCliW_cancel)
 
-    def init_newArqW(self):
+    def newArqW_init(self):
         self.newArqWindow = NewArqWindow(d_Hab_est=self.d_Hab_est)
         self.newArqWindow.btnSearchClient.clicked.connect(self.callback_newArqW_cli_search)
         self.newArqWindow.btnUpdateClient.clicked.connect(self.callback_newArqW_cli_update)
@@ -170,7 +170,7 @@ class Controller():
         self.newArqWindow.btnClearTimeChecking.clicked.connect(self.callback_newArqW_clear_time_checking)
         self.newArqWindow.btnClearTimeCheckout.clicked.connect(self.callback_newArqW_clear_time_checkout)
 
-    def init_newHabRegW(self):
+    def newHabRegW_init(self):
         self.newHabRegWindow = NewHabRegWindow(self.d_Hab_est)
 
         self.newHabRegWindow.btnSearchHab.clicked.connect(self.callback_newHabRegW_hab_search)
@@ -198,7 +198,7 @@ class Controller():
 
     def callback_mainW_sunat(self):
         webbrowser.open('https://e-menu.sunat.gob.pe/cl-ti-itmenu/MenuInternet.htm?pestana=*&agrupacion=*')
-    
+
     #CALLBACKS - HABITACION WINDOW
     def callback_habW_update(self):
         self.habW_update_values_table()
@@ -542,7 +542,7 @@ class Controller():
         if(foc == False): foc = "True" #foc is Flase by default when interruption
 
         if(self.habWindow.isCreated == False):
-            self.init_habW()
+            self.habW_init()
             self.habW_update_values_table()
             self.create_visual_sub_window(wid = self.habWindow)
         else:
@@ -557,7 +557,7 @@ class Controller():
     ### FUNCTIONS - ARQUILER WINDOW
 
     def arqW_setup(self, pos_x  = None, pos_y = None, window_data = None):
-        self.init_arqW(window_data)
+        self.arqW_init(window_data)
         self.arqW_update_values_table()
         self.create_visual_sub_window(self.arqWindow,pos_x, pos_y)
 
@@ -590,8 +590,8 @@ class Controller():
     ### FUNCTIONS - CLIENT WINDOW
 
     def cliW_setup(self, pos_x  = None, pos_y = None, window_data = None):
-        self.init_cliW(window_data)
-        self.cliW_update_values_table_()
+        self.cliW_init(window_data)
+        self.cliW_update_values_table()
         self.create_visual_sub_window(self.cliWindow,pos_x, pos_y)
 
     def cliW_show_update(self, foc):
@@ -615,7 +615,7 @@ class Controller():
             elif((curr_act != None)):
                 self.mainWindow.mdiAreaMain.setActiveSubWindow(curr_act)
 
-    def cliW_update_values_table_(self):
+    def cliW_update_values_table(self):
         self.get_values_client()
         self.cliWindow.updateTableView(self.d_Clientes, table_cli_column_names)
 
@@ -691,7 +691,7 @@ class Controller():
 
     ### FUNCTIONS - HABITACION REGISTRO WINDOW
     def habRegW_setup(self, pos_x  = None, pos_y = None, data_front = None, data_back = None):
-        self.init_habRegW(data_front, data_back)
+        self.habRegW_init(data_front, data_back)
         self.habRegW_update_values_table()
         self.create_visual_sub_window(self.habRegWindow,pos_x, pos_y)
     
@@ -768,7 +768,7 @@ class Controller():
         if(foc == False): foc = "True" #foc is Flase by default when interruption
         
         if(self.newCliWindow.isCreated == False):
-            self.init_newCliW()
+            self.newCliW_init()
             self.create_visual_sub_window(self.newCliWindow)
         else:
             if(foc == "True"):
@@ -781,12 +781,11 @@ class Controller():
         if(foc == False): foc = "True" #foc is Flase by default when interruption
         
         if(self.newArqWindow.isCreated == False):
-            self.init_newArqW()
+            self.newArqW_init()
             self.create_visual_sub_window(self.newArqWindow)
         else:
             if(foc == "True"):
                 self.newArqWindow.subWindowRef.setFocus()
-    
     
     def newArqW_f_fill_hab_from_id(self, id_hab):
         if(id_hab != None):
@@ -800,14 +799,13 @@ class Controller():
         else:
             return 0
     
-
     ### FUNCTIONS - NEW HABITACION REGISTRO WINDOW
 
     def newHabRegW_show_update(self, foc):
         if(foc == False): foc = "True" #foc is Flase by default when interruption
         
         if(self.newHabRegWindow.isCreated == False):
-            self.init_newHabRegW()
+            self.newHabRegW_init()
             self.create_visual_sub_window(self.newHabRegWindow)
         else:
             if(foc == "True"):
