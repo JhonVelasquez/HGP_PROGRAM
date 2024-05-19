@@ -2,7 +2,7 @@ import sys
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtWidgets import *
-from db_func import *
+from db_model import *
 from PyQt6.QtCore import Qt, QDateTime, QDate
 #from main import *
 import datetime
@@ -24,6 +24,16 @@ class Window_data():
     order_type = None
     order_feature = None
 
+    path_gui = None
+    title_window = None
+    has_table = None
+    has_pages = None
+    has_client_section = None
+    has_combo_estados = None
+    extra_combo_estados = None
+    combo_estados_in_arquiler = None
+    
+
     def reset(self):
         self.page_current = 1
         self.page_size = 10
@@ -42,18 +52,70 @@ class Window_data():
     def set_pageCurrent(self, page):
         self.page_current = page
 
-class MainWindow(QtWidgets.QMainWindow):
+class GeneralWindow(QtWidgets.QWidget):
     isCreated = False
     subWindowRef = None
+    data_back = None
+    newCliFuncs = None
+    context_menu = None
 
-    def __init__(self, *args, **kwargs):
+    table_column_names = None
+    data_front = None
+
+    def __init__(self, data_back: Window_data = None, data_front: Window_data = None, d_Hab_est:dict = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/main.ui', self)
-        self.setWindowTitle("HGP")
+        uic.loadUi(data_back.path_gui, self)
+        self.setWindowTitle(data_back.title_window)
         icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setIconSize(QtCore.QSize(30,30))
         self.setWindowIcon(icon)
         self.isCreated = False
+
+        if (data_back == None): self.data_back = Window_data()
+        else: self.data_back = data_back
+        
+        if (data_front == None): self.data_front = Window_data()
+        else: self.data_front = data_front
+
+        if(self.data_back.has_client_section==True): self.newCliFuncs = NewClientFunctions()
+        if(self.data_back.has_combo_estados == True): self.loadComboState(d_Hab_est)
+
+        #loading graphics
+        self.updateUsingWindowData()
+
+        self.context_menu = QMenu(self)
+        clearWindow = self.context_menu.addAction("Limpiar ventana")
+        clearWindow.triggered.connect(self.clearWindow)
+
+        
+    def clearWindow(self):
+        self.data_front.reset()
+        self.data_back.reset()
+        self.updateUsingWindowData()
+
+    def updateUsingWindowData(self):      
+        if(self.data_back.page_current == None): self.data_back.page_current = 1
+        self.updateUsingWindowDataBack()
+        self.updateUsingWindowDataFront()
+
+    def updateUsingWindowDataBack(self):      
+        if(self.data_back.has_pages):
+            if(self.data_back.page_current == None): self.data_back.page_current = 1
+            self.updatePageLabel(self.data_back.page_current)
+    
+    def updateUsingWindowDataFront(self):
+        return 0
+    
+    def pushFrontDataToBack(self):
+        return 0
+    
+    def getWindowDataFront(self):
+        return 0
+    
+    def getWindowDataBack(self):
+        return self.data_back
+
+    def contextMenuEvent(self, event):
+        self.context_menu.exec(event.globalPos())
 
     def closeEvent(self, event):
         # do stuff
@@ -65,56 +127,123 @@ class MainWindow(QtWidgets.QMainWindow):
             event.ignore()
 
     def show_visual(self, focus = True):
-        short_show(self, focus)
-    
-class HabWindow(QtWidgets.QWidget):
-    isCreated = False
-    subWindowRef = None
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/hab.ui', self)
-        self.setWindowTitle("Habitaciones")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        self.isCreated = False
-
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
-    
-    def show_visual(self, focus = True):
-        short_show(self, focus)
+        self.show()
+        #self.showNormal()
+        #self.setVisible(True)
+        if focus: self.setFocus()
+        #self.activateWindow()
+        #self.raise_()
+        #self.blockSignals(False)
 
     def resetTableView(self):
-        self.tblHab.reset()
-        self.tblHab.setSortingEnabled(False)
-        
+        self.tableContent.reset()
+        self.tableContent.setSortingEnabled(False)
+
     def setTableViewPost(self):
-        self.tblHab.setSortingEnabled(True)
-        
+        self.tableContent.setSortingEnabled(True)
+
+    def get_element_selected_text(self, column = 0):
+        r = (self.tableContent.currentRow())
+        if(r == -1):
+            return None
+        else:
+            id_sel = self.tableContent.item(r,column).text()
+            return id_sel
+    
+    #If there is page_current and page_next    
+    def getSizePage(self):
+        return self.data_back.page_size
+
+    def getCurrentPage(self):
+        return self.data_back.page_current
+    
+    def setCurrentPage(self, page: int):
+        self.data_back.page_current = page
+        self.updatePageLabel(page)
+ 
+    def nextPage(self):
+        self.setCurrentPage(self.getCurrentPage()+1)
+
+    def prevPage(self):
+        self.setCurrentPage(self.getCurrentPage()-1)
+
+    def  updatePageLabel(self, page_current):
+        self.lblPage.setText(str(page_current))
+
+    #cliente section
+    def fillData_cli(self, c: Cliente):
+        self.newCliFuncs.fillData(self, c)
+
+    def clearLineData_cli(self):
+        self.newCliFuncs.clearLineData(self)
+
+    def getDocumentFromForm_cli(self):
+        return self.newCliFuncs.getDocumentFromForm(self)
+    
+    def getClientFromForm_cli(self):
+        return self.newCliFuncs.getClientFromForm(self)
+    
+    def isDocEmpty_cli(self):
+        return self.newCliFuncs.isDocEmpty(self)
+    
+    def setInf_cli(self, mssg):
+        return self.newCliFuncs.setInf(self, mssg) 
+    
+    #combo box estado
+    def loadComboState(self, d_Hab_est):
+        self.comboBoxState.clear()
+        for hab_est in d_Hab_est.values():
+            if(self.data_back.combo_estados_in_arquiler == True):
+                if(hab_est.is_in_arquiler == "True"):
+                    self.comboBoxState.addItem(hab_est.value)
+            else:
+                self.comboBoxState.addItem(hab_est.value)
+
+        if(self.data_back.extra_combo_estados != None):
+            self.comboBoxState.addItem(self.data_back.extra_combo_estados)
+            self.comboBoxState.setCurrentText(self.data_back.extra_combo_estados)
+
+class MainWindow(GeneralWindow):
+    
+    def __init__(self, *args, **kwargs):
+        data_back = Window_data()
+        data_back.path_gui = './ui/main_widget.ui'
+        data_back.title_window = "HGP"
+        data_back.has_table = True
+        data_back.has_pages = False
+        super().__init__(data_back=data_back,*args, **kwargs)    
+    
+class HabWindow(GeneralWindow):
+
+    def __init__(self, *args, **kwargs):
+        data_back = Window_data()
+        data_back.path_gui = './ui/hab.ui'
+        data_back.title_window = "Habitaciones"
+        data_back.has_table = True
+        data_back.has_pages = False
+        super().__init__(data_back=data_back,*args, **kwargs)
+
+    def get_hab_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return v
+        else: return None
+
     def updateTableView(self, d_Habitaciones: dict[str, Habitacion], columnNames, d_Hab_est, d_Hab_cam, d_Hab_car):
 
         #self.resetTableView()
-
         n_row = len(d_Habitaciones)
         n_col = len (columnNames.values())
 
-        self.tblHab.setColumnCount(n_col)
-        self.tblHab.setRowCount(n_row)
-        self.tblHab.setStyleSheet("QTableWidget::item { padding-left:0px; padding-right:0px; padding-top: 5px; padding-bottom: 5px;}")
+        self.tableContent.setColumnCount(n_col)
+        self.tableContent.setRowCount(n_row)
+        self.tableContent.setStyleSheet("QTableWidget::item { padding-left:0px; padding-right:0px; padding-top: 5px; padding-bottom: 5px;}")
 
         for i,key in enumerate(d_Habitaciones.keys()):
             header_item = QtWidgets.QTableWidgetItem(str(i+1))
-            self.tblHab.setVerticalHeaderItem(i, header_item)
+            self.tableContent.setVerticalHeaderItem(i, header_item)
 
         for j,name in enumerate(columnNames.values()):
-            self.tblHab.setHorizontalHeaderItem(j,QtWidgets.QTableWidgetItem(name))
+            self.tableContent.setHorizontalHeaderItem(j,QtWidgets.QTableWidgetItem(name))
 
         for i,key in enumerate(d_Habitaciones.keys()):
             for j,col_name in enumerate(columnNames.values()):
@@ -122,7 +251,7 @@ class HabWindow(QtWidgets.QWidget):
                 element = None
                 if(j == 7 or j == 8): # lists of hab_reg in var
                     element = QtWidgets.QTableWidgetItem()
-                    self.tblHab.setItem(i, j, element)
+                    self.tableContent.setItem(i, j, element)
                     #element.setTextAlignment(Qt.AlignmentFlag.AlignLeft)
                     widget = QWidget()
                     layout = QHBoxLayout()
@@ -165,95 +294,34 @@ class HabWindow(QtWidgets.QWidget):
                     widget.setLayout(layout) 
                     widget.setSizePolicy(QtWidgets.QSizePolicy.Policy(QSizePolicy.Policy.Minimum), QtWidgets.QSizePolicy.Policy(QSizePolicy.Policy.Minimum))
 
-                    self.tblHab.setCellWidget(i, j, widget)
+                    self.tableContent.setCellWidget(i, j, widget)
                 else:
                     element = QtWidgets.QTableWidgetItem()
                     element.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     element.setData(Qt.ItemDataRole.DisplayRole, var)
-                    self.tblHab.setItem(i, j, element)
+                    self.tableContent.setItem(i, j, element)
 
-        self.tblHab.resizeColumnsToContents()
-        self.tblHab.resizeRowsToContents()
+        self.tableContent.resizeColumnsToContents()
+        self.tableContent.resizeRowsToContents()
         
         self.setTableViewPost()
 
-    def setTableView(self, d_Habitaciones: dict[str, Habitacion], columnNames, d_Hab_est, d_Hab_cam, d_Hab_car):
-        self.updateTableView(d_Habitaciones, columnNames, d_Hab_est, d_Hab_cam, d_Hab_car)
+class ArqWindow(GeneralWindow):
 
+    def __init__(self, data_back: Window_data, *args, **kwargs):
+        if(data_back == None): data_back = Window_data()
+        data_back.path_gui = './ui/arq.ui'
+        data_back.title_window = "Arquileres"
+        data_back.has_table = True
+        data_back.has_pages = True
+        super().__init__(data_back=data_back,*args, **kwargs)
 
-class ArqWindow(QtWidgets.QWidget):
-    isCreated = False
-    subWindowRef = None
-    data = None
-
-    def __init__(self, win_data: Window_data, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/arq.ui', self)
-        self.setWindowTitle("Arquileres")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        self.isCreated = False
-        if (win_data == None): self.data = Window_data()
-        else: self.data = win_data
-        self.updateUsingWindowData()
-
-    def getSizePage(self):
-        return self.data.page_size
-
-    def getCurrentPage(self):
-        return self.data.page_current
-    
-    def setCurrentPage(self, page: int):
-        self.data.page_current = page
-        self.updatePageLabel(page)
-
-    def nextPage(self):
-        self.setCurrentPage(self.getCurrentPage()+1)
-
-    def prevPage(self):
-        self.setCurrentPage(self.getCurrentPage()-1)
-
-    def updateUsingWindowData(self):
-        if(self.data.page_current == None): self.data.page_current = 1
-        self.updatePageLabel(self.data.page_current)
-
-        """ if(self.data.id_hab == None): self.data.id_hab = ""
-        self.lineEditHab.setText(str(self.data.id_hab)) """
-
-        return 0
-
-    def getWindowData(self):
-        """ id_hab = self.lineEditHab.text()
-        if (id_hab == ""):
-           id_hab = None
-        self.data.id_hab = id_hab """
-
-        return self.data
-    
-    def updatePageLabel(self, page_current):
-        self.lblPage.setText(str(page_current))
-
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
-
-    def show_visual(self, focus = True):
-        short_show(self, focus)
-
-    def resetTableView(self):
-        self.tableContent.reset()
-        self.tableContent.setSortingEnabled(False)
-
-    def setTableViewPost(self):
-        self.tableContent.setSortingEnabled(True)
+    def get_arq_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return int(v)
+        else: return None
         
     def updateTableView(self, d_Arquiler: dict[str, Arquiler], columnNames, d_Empleado, d_Clientes):
-
         #self.resetTableView()
 
         n_row = len(d_Arquiler)
@@ -300,48 +368,27 @@ class ArqWindow(QtWidgets.QWidget):
 
         self.setTableViewPost()
 
-    def setTableView(self, d_Arquiler: dict[str, Arquiler], columnNames, d_Empleado):
-        self.updateTableView(d_Arquiler, columnNames, d_Empleado)    
-
-class NewArqWindow(QtWidgets.QWidget):
-    isCreated = False
-    subWindowRef = None
-    cliFuncs = None
+class NewArqWindow(GeneralWindow):
 
     def __init__(self, d_Hab_est, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/new_arq.ui', self)
-        self.setWindowTitle("Nuevo arquiler")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        self.isCreated = False
-        self.cliFuncs = NewClientFunctions()
+        data_back = Window_data()
+        data_back.path_gui = './ui/new_arq.ui'
+        data_back.title_window = "Nuevo arquiler"
+        data_back.has_table = False
+        data_back.has_pages = False
+        data_back.has_client_section = True
+
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = "(Estado no válido)"
+
+        data_back.combo_estados_in_arquiler = True
+
+        super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
+
         self.set_time_checking_now()
         self.set_time_checkout_now()
         self.timeEditChecking.setCalendarPopup(True)
         self.timeEditCheckout.setCalendarPopup(True)
-        self.loadCombo(d_Hab_est)
-
-    def loadCombo(self, d_Hab_est):
-        self.comboBoxState.clear()
-        for hab_est in d_Hab_est.values():
-            if(hab_est.is_in_arquiler == "True"):
-                self.comboBoxState.addItem(hab_est.value)
-        
-        self.comboBoxState.addItem("(Estado no válido)")
-        self.comboBoxState.setCurrentText("(Estado no válido)")
-
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
-
-    def show_visual(self, focus = True):
-        short_show(self, focus)
 
     def fillData_hab(self, h: Habitacion, d_Hab_cam, d_Hab_est):
         self.lineEditHabID.setText(h.id)
@@ -354,6 +401,32 @@ class NewArqWindow(QtWidgets.QWidget):
             self.label_estado.setText(str(est.value))
         else:
             self.label_estado.setText("")
+            
+    def clearWindow(self):
+        self.lineEditArqID.setText("")
+        
+        self.lineEditHabID.setText("")
+        self.label_camas.setText("")
+        self.label_precio.setText("")
+        self.label_estado.setText("")
+
+        self.lineEditDocument.setText("")
+        self.lineEditName.setText("")
+        self.lineEditLastName.setText("")
+        self.lineEditCellphone.setText("")
+        self.lineEditAdditionalData.setText("")
+
+        self.labelEstadoID.setText("")
+        self.comboBoxState.setCurrentText("(Estado no válido)")
+        
+        self.clear_time_checking_now()
+        self.clear_time_checkout_now()
+        self.lineEditPrice.setText("")
+        self.lineEditDeuda.setText("")
+
+        self.labelInfHab.setText("-")
+        self.labelInfClient.setText("-")
+        self.labelInfArq.setText("-")
 
     def getID_hab(self):
         return self.lineEditHabID.text()
@@ -370,27 +443,8 @@ class NewArqWindow(QtWidgets.QWidget):
     def clear_time_checkout_now(self):
         self.timeEditCheckout.setDateTime(self.timeEditCheckout.minimumDateTime())
     
-    def fillData_cli(self, c: Cliente):
-        self.cliFuncs.fillData(self, c)
-
-    def clearLineData_cli(self):
-        self.cliFuncs.clearLineData(self)
-
-    def getDocumentFromForm_cli(self):
-        return self.cliFuncs.getDocumentFromForm(self)
-    
-    def getClientFromForm_cli(self):
-        return self.cliFuncs.getClientFromForm(self)
-    
-    def isDocEmpty_cli(self):
-        return self.cliFuncs.isDocEmpty(self)
-    
-    def setInf_cli(self, mssg):
-        return self.cliFuncs.setInf(self, mssg)
-    
     def prepare_create(self):
         self.labelEstadoID.setText("")
-    
     
     def getArqFromForm(self, d_Hab_est, id_emp, type_op):
         arq = Arquiler()
@@ -571,39 +625,36 @@ class NewArqWindow(QtWidgets.QWidget):
     def setInf_hab(self, mssg):
         return self.labelInfHab.setText(mssg)
     
-class NewHabRegWindow(QtWidgets.QWidget):
-    isCreated = False
-    subWindowRef = None
+class NewHabRegWindow(GeneralWindow):
 
     def __init__(self, d_Hab_est, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/new_hab_reg.ui', self)
-        self.setWindowTitle("Nuevo registro de estado")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        self.isCreated = False
+        data_back = Window_data()
+        data_back.path_gui = './ui/new_hab_reg.ui'
+        data_back.title_window = "Nuevo registro de estado"
+        data_back.has_table = False
+        data_back.has_pages = False
+        data_back.has_client_section = False
+
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = None
+        data_back.combo_estados_in_arquiler = False
+
+        super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
+
         self.set_time_start_now()
         self.set_time_end_now()
         self.timeEditHabRegStart.setCalendarPopup(True)
         self.timeEditHabRegEnd.setCalendarPopup(True)
-        self.loadCombo(d_Hab_est)
-
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
-
-    def show_visual(self, focus = True):
-        short_show(self, focus)
-
-    def loadCombo(self, d_Hab_est):
-        self.comboBoxState.clear()
-        for hab_est in d_Hab_est.values():
-            self.comboBoxState.addItem(hab_est.value)
+            
+    def clearWindow(self):
+        self.lineEditHabRegID.setText("")
+        
+        self.lineEditHabID.setText("")
+        self.label_estado.setText("")
+        
+        self.set_time_start_now()
+        self.set_time_end_now()
+        self.comboBoxState.setCurrentIndex(0)
 
     def getID_hab_reg(self):
         return self.lineEditHabRegID.text()
@@ -736,84 +787,26 @@ class NewHabRegWindow(QtWidgets.QWidget):
             
         return hr
     
-class ClientWindow(QtWidgets.QWidget):
-    isCreated = False
-    subWindowRef = None
-    data = None
+class ClientWindow(GeneralWindow):
 
-    def __init__(self, win_data, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/client.ui', self)
-        self.setWindowTitle("Clientes")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        self.isCreated = False
-        if (win_data == None): self.data = Window_data()
-        else: self.data = win_data
-        self.updateUsingWindowData()
+    def __init__(self, data_back, *args, **kwargs):
+        if(data_back == None): data_back = Window_data()
+        data_back.path_gui = './ui/client.ui'
+        data_back.title_window = "Clientes"
+        data_back.has_table = True
+        data_back.has_pages = True
+        data_back.has_client_section = True
 
-    def getSizePage(self):
-        return self.data.page_size
+        data_back.has_combo_estados = False
+        data_back.extra_combo_estados = "(Estado no válido)"
 
-    def getCurrentPage(self):
-        return self.data.page_current
-    
-    def setCurrentPage(self, page: int):
-        self.data.page_current = page
-        self.updatePageLabel(page)
+        super().__init__(data_back=data_back,*args, **kwargs)
 
-    def nextPage(self):
-        self.setCurrentPage(self.getCurrentPage()+1)
+    def get_cli_doc_selected(self):
+        v = self.get_element_selected_text(column=1)
+        if(v != None): return v
+        else: return None
 
-    def prevPage(self):
-        self.setCurrentPage(self.getCurrentPage()-1)
-
-    def updateUsingWindowData(self):
-        if(self.data.page_current == None): self.data.page_current = 1
-        self.updatePageLabel(self.data.page_current)
-
-        """ if(self.data.id_hab == None): self.data.id_hab = ""
-        self.lineEditHab.setText(str(self.data.id_hab)) """
-
-        return 0
-
-    def getWindowData(self):
-        """ id_hab = self.lineEditHab.text()
-        if (id_hab == ""):
-           id_hab = None
-        self.data.id_hab = id_hab """
-
-        return self.data
-
-    def updatePageLabel(self, page_current):
-        self.lblPage.setText(str(page_current))
-
-    def move_this(self, x,y):
-        a = QtCore.QPoint()
-        a.setX(x)
-        a.setY(y)
-        self.move(a)
-
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
-
-
-    def show_visual(self, focus = True):
-        short_show(self, focus)
-
-    def resetTableView(self):
-        self.tableContent.reset()
-        self.tableContent.setSortingEnabled(False)
-
-    def setTableViewPost(self):
-        self.tableContent.setSortingEnabled(True)
-        
     def updateTableView(self, d_Clientes: dict[str, Cliente], columnNames):
 
         self.resetTableView()
@@ -852,98 +845,50 @@ class ClientWindow(QtWidgets.QWidget):
 
         self.setTableViewPost()
 
-    def setTableView(self, d_Clientes: dict[str, Cliente], columnNames):
-        self.updateTableView(d_Clientes, columnNames)    
-
-
-class HabRegWindow(QtWidgets.QWidget):
-    isCreated = False
-    subWindowRef = None
-    table_column_names = None
-    context_menu = None
-    data_front = None
-    data_back = None
+class HabRegWindow(GeneralWindow):
 
     def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/hab_reg.ui', self)
-        self.setWindowTitle("Registros de habitación")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        self.dateEditStart.setCalendarPopup(True)
-        self.isCreated = False
+        if(data_back==None): data_back = Window_data()
+        data_back.path_gui = './ui/hab_reg.ui'
+        data_back.title_window = "Registros de habitación"
+        data_back.has_table = True
+        data_back.has_pages = True
+        data_back.has_client_section = False
+
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = ""
+        data_back.combo_estados_in_arquiler = False
+
         self.table_column_names = table_column_names
 
-        if (data_front == None): self.data_front = Window_data()
-        else: self.data_front = data_front
-        
-        if (data_back == None): self.data_back = Window_data()
-        else: self.data_back = data_back
-        
-        self.loadComboState(d_Hab_est)
+        super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,data_front=data_front,*args, **kwargs)
+
+        self.dateEditStart.setCalendarPopup(True)
         self.loadComboOrder()
 
-        self.updateUsingWindowDataBack()
+    def get_hab_reg_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return int(v)
+        else: return None
 
-        self.context_menu = QMenu(self)
-        clearWindow = self.context_menu.addAction("Limpiar ventana")
-        clearWindow.triggered.connect(self.clearWindow)
+    def updateUsingWindowDataFront(self):
+        if(self.data_front.id_hab_reg == None): self.lineEditID.setText("")
+        else: self.lineEditID.setText(str(self.data_front.id_hab_reg))
 
-    def contextMenuEvent(self, event):
-        self.context_menu.exec(event.globalPos())
+        if(self.data_front.fecha_inicio == None): self.clear_time_start_now()
+        else: self.dateEditStart.setDateTime(self.data_front.fecha_inicio)
 
-    def clearWindow(self):
-        self.data_front.reset()
-        self.data_back.reset()
-        self.updateUsingWindowDataBack()
+        if(self.data_front.id_hab == None): self.lineEditHabID.setText("")
+        else: self.lineEditHabID.setText(str(self.data_front.id_hab))
 
-    def getSizePage(self):
-        return self.data_back.page_size
+        if(self.data_front.hab_est == None): self.comboBoxState.setCurrentText("")
+        else: self.comboBoxState.setCurrentText(str(self.data_front.hab_est))
 
-    def getCurrentPage(self):
-        return self.data_back.page_current
-    
-    def setCurrentPage(self, page: int):
-        self.data_back.page_current = page
-        self.updatePageLabel(page)
+        if(self.data_front.order_type == None): self.comboBoxOrderType.setCurrentText("desc")
+        else: self.comboBoxOrderType.setCurrentText(str(self.data_front.order_type))
 
-    def nextPage(self):
-        self.setCurrentPage(self.getCurrentPage()+1)
-
-    def prevPage(self):
-        self.setCurrentPage(self.getCurrentPage()-1)
-
-    def set_time_start_now(self):
-        self.dateEditStart.setDateTime(QDateTime.currentDateTime())
-
-    def clear_time_start_now(self):
-        self.dateEditStart.setDateTime(self.dateEditStart.minimumDateTime())
-
-    def updateUsingWindowDataBack(self):      
-        if(self.data_back.page_current == None): self.data_back.page_current = 1
-        self.updatePageLabel(self.data_back.page_current)
-        self.updateUsingWindowData(self.data_front)
-    
-    def updateUsingWindowData(self, data):
-        if(data.id_hab_reg == None): self.lineEditID.setText("")
-        else: self.lineEditID.setText(str(data.id_hab_reg))
-
-        if(data.fecha_inicio == None): self.clear_time_start_now()
-        else: self.dateEditStart.setDateTime(data.fecha_inicio)
-
-        if(data.id_hab == None): self.lineEditHabID.setText("")
-        else: self.lineEditHabID.setText(str(data.id_hab))
-
-        if(data.hab_est == None): self.comboBoxState.setCurrentText("")
-        else: self.comboBoxState.setCurrentText(str(data.hab_est))
-
-        if(data.order_type == None): self.comboBoxOrderType.setCurrentText("desc")
-        else: self.comboBoxOrderType.setCurrentText(str(data.order_type))
-
-        if(data.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
-        else: self.comboBoxOrderFeature.setCurrentText(str(data.order_feature))
-
-        return 0
+        if(self.data_front.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
+        else: self.comboBoxOrderFeature.setCurrentText(str(self.data_front.order_feature))
     
     def pushFrontDataToBack(self):
         self.getWindowDataFront() #pullgin dataFront from UI
@@ -981,17 +926,12 @@ class HabRegWindow(QtWidgets.QWidget):
         self.data_front.order_feature = order_feature
         return self.data_front
 
-    def getWindowDataBack(self):
-        return self.data_back
-    
-    def loadComboState(self, d_Hab_est):
-        self.comboBoxState.clear()
-        for hab_est in d_Hab_est.values():
-            self.comboBoxState.addItem(hab_est.value)  
-        self.comboBoxState.addItem("")
+    def set_time_start_now(self):
+        self.dateEditStart.setDateTime(QDateTime.currentDateTime())
 
-        self.comboBoxState.setCurrentText("")
-
+    def clear_time_start_now(self):
+        self.dateEditStart.setDateTime(self.dateEditStart.minimumDateTime())
+   
     def loadComboOrder(self):
         self.comboBoxOrderType.clear()
         self.comboBoxOrderType.addItem("asce")
@@ -1002,33 +942,8 @@ class HabRegWindow(QtWidgets.QWidget):
         for col in self.table_column_names.values():
             self.comboBoxOrderFeature.addItem(col)
         self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
-
-    def updatePageLabel(self, page_current):
-        self.lblPage.setText(str(page_current))
-        return 0
-    
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
-
-        
-    def show_visual(self, focus = True):
-        short_show(self, focus)
-
-    def resetTableView(self):
-        self.tableContent.reset()
-        self.tableContent.setSortingEnabled(False)
-
-    def setTableViewPost(self):
-        self.tableContent.setSortingEnabled(True)
-        
+           
     def updateTableView(self, d_Hab_Reg: dict[str, Habitaciones_registro], d_Hab_est):
-
         #self.resetTableView()
 
         n_row = len(d_Hab_Reg)
@@ -1065,53 +980,30 @@ class HabRegWindow(QtWidgets.QWidget):
 
         self.setTableViewPost()
 
-    def setTableView(self, d_Hab_Reg: dict[str, Habitaciones_registro], d_Empleado):
-        self.updateTableView(d_Hab_Reg, d_Empleado)    
-
-class NewClientWindow(QtWidgets.QWidget):
-    isCreated = False
-    funcs = None
-    subWindowRef = None
+class NewClientWindow(GeneralWindow):
     
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        uic.loadUi('./ui/new_client.ui', self)
-        self.setWindowTitle("Nuevo cliente")
-        icon = QtGui.QIcon("./src/logoHGP.png")
-        self.setWindowIcon(icon)
-        #self.newClientWindow.labelInf.setText("-")
-        self.isCreated = False
-        self.funcs = NewClientFunctions()
+        data_back = Window_data()
+        data_back.path_gui = './ui/new_client.ui'
+        data_back.title_window = "Nuevo cliente"
+        data_back.has_table = False
+        data_back.has_pages = False
+        data_back.has_client_section = True
 
-    def closeEvent(self, event):
-        # do stuff
-        should_it_close = True
-        if should_it_close:
-            self.isCreated = False
-            event.accept() # let the window close
-        else:
-            event.ignore()
+        data_back.has_combo_estados = False
+        data_back.extra_combo_estados = None
 
-    def show_visual(self, focus = True):
-        short_show(self, focus)
-    
-    def fillData_cli(self, c: Cliente):
-        self.funcs.fillData(self, c)
-
-    def clearLineData_cli(self):
-        self.funcs.clearLineData(self)
-
-    def getDocumentFromForm_cli(self):
-        return self.funcs.getDocumentFromForm(self)
-    
-    def getClientFromForm_cli(self):
-        return self.funcs.getClientFromForm(self)
-    
-    def isDocEmpty_cli(self):
-        return self.funcs.isDocEmpty(self)
-    
-    def setInf_cli(self, mssg):
-        return self.funcs.setInf(self, mssg)
+        super().__init__(data_back=data_back,*args, **kwargs)
+            
+    def clearWindow(self):
+        self.lineEditDocument.setText("")
+        
+        self.lineEditName.setText("")
+        self.lineEditLastName.setText("")
+        
+        self.lineEditCellphone.setText("")
+        self.lineEditAdditionalData.setText("")
+        self.labelInfClient.setText("-")
             
 class NewClientFunctions():
     def fillData(self, widg, c: Cliente):
@@ -1210,17 +1102,13 @@ class TestWindow(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def show_visual(self, focus = True):
-        short_show(self, focus)
+        self.show()
+        #self.showNormal()
+        #self.setVisible(True)
+        if focus: self.setFocus()
+        #self.activateWindow()
+        #self.raise_()
+        #self.blockSignals(False)
 
-
-def short_show(s, focus = True):
-    s.show()
-    #s.showNormal()
-    #s.setVisible(True)
-    if focus: s.setFocus()
-    #s.activateWindow()
-    #s.raise_()
-    #s.blockSignals(False)
-    return 0
 
     QTableWidget.style
