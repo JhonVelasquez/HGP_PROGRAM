@@ -8,7 +8,9 @@ from sqlalchemy import func, extract
 from sqlalchemy import or_, and_
 from sqlalchemy import join
 
-from db_func import *
+from db_model import *
+from db import *
+
 from gui_hgp import *
 from datetime import datetime
 from theme_css import dark_theme
@@ -175,11 +177,11 @@ class Controller():
 
         self.newHabRegWindow.btnSearchHab.clicked.connect(self.callback_newHabRegW_hab_search)
         
-        self.newHabRegWindow.btnSearchHabReg.clicked.connect(self.callback_newHabRegW_arq_search)
-        self.newHabRegWindow.btnUpdateHabReg.clicked.connect(self.callback_newHabRegW_arq_update)
-        self.newHabRegWindow.btnCreateHabReg.clicked.connect(self.callback_newHabRegW_arq_create)
-        self.newHabRegWindow.btnCancelHabReg.clicked.connect(self.callback_newHabRegW_arq_cancel)
-        self.newHabRegWindow.btnDeleteHabReg.clicked.connect(self.callback_newHabRegW_arq_delete)
+        self.newHabRegWindow.btnSearchHabReg.clicked.connect(self.callback_newHabRegW_search)
+        self.newHabRegWindow.btnUpdateHabReg.clicked.connect(self.callback_newHabRegW_update)
+        self.newHabRegWindow.btnCreateHabReg.clicked.connect(self.callback_newHabRegW_create)
+        self.newHabRegWindow.btnCancelHabReg.clicked.connect(self.callback_newHabRegW_cancel)
+        self.newHabRegWindow.btnDeleteHabReg.clicked.connect(self.callback_newHabRegW_delete)
 
         self.newHabRegWindow.btnUpdateTimeHabRegStart.clicked.connect(self.callback_newHabRegW_update_time_start)
         self.newHabRegWindow.btnUpdateTimeHabRegEnd.clicked.connect(self.callback_newHabRegW_update_time_end)
@@ -213,6 +215,8 @@ class Controller():
 
     def callback_arqW_openNewArqW(self):
         self.newArqW_show_update(foc= "True")
+        id_sel = self.arqWindow.get_arq_id_selected()
+        if(id_sel != None): self.f_newArq_search_fill(id_arq= id_sel)
 
     def callback_arqW_prev(self):
         if(self.arqWindow.getCurrentPage() >= 2):
@@ -232,6 +236,8 @@ class Controller():
 
     def callback_cliW_openNewCliW(self):
         self.newCliW_show_update(foc= "True")
+        doc_sel = self.cliWindow.get_cli_doc_selected()
+        if(doc_sel != None): self.f_client_fill_widget_by_doc(doc= doc_sel, widg= self.newCliWindow)
 
     def callback_cliW_prev(self):
         if(self.cliWindow.getCurrentPage() >= 2):
@@ -251,6 +257,8 @@ class Controller():
 
     def callback_habRegW_openNewHabRegW(self):
         self.newHabRegW_show_update(foc= "True")
+        id_sel = self.habRegWindow.get_hab_reg_id_selected()
+        if(id_sel != None): self.f_newHabReg_search_fill(hab_reg_id= id_sel, window= None)
 
     def callback_habRegW_prev(self):
         if(self.habRegWindow.getCurrentPage() >= 2):
@@ -304,21 +312,10 @@ class Controller():
         arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "search")
         if(arq_form != None):
             id_arq_form = arq_form.id
-            arq_db = db_hgp.get_arq_by_id(id_arq_form)
-            if (arq_db!=None):
-                self.newArqWindow.fillData_arq(arq_db)
-
-                self.newArqW_f_fill_hab_from_id(arq_db.id_hab)
-
-                doc = None
-                cli = db_hgp.get_client_by_id(arq_db.id_cli)
-                if (cli == None): doc = None
-                else: doc = cli.nDocumento
-                self.f_client_fill_widget_by_doc(self.newArqWindow, doc)
-            else:
-                CustomDialog("Error","No hay arquiler con id " + str(id_arq_form)).exec()
+            self.f_newArq_search_fill(self, id_arq_form)
         else:
             return 0
+
     def callback_newArqW_arq_update(self):
         err = 0
         arq_form = None
@@ -350,7 +347,7 @@ class Controller():
                         err=err+1
 
                     #If there is not Hab_reg, then create one.
-                    if(arq_form.id_hab_reg == None):
+                    if(arq_db.id_hab_reg == None):
                         #create hab_reg
                         #update visual
                         new_hab_reg = None
@@ -367,6 +364,7 @@ class Controller():
                     if(err == 0):
                         arq_form.lastUpdate = datetime.now()
                         db_hgp.update_Arquiler(arq_form,arq_db)
+                        self.f_newArq_search_fill( arq_db.id)
                         self.newArqWindow.setInf_arq("U:Listo")
                         self.arqW_show_update(foc= "False")
 
@@ -469,32 +467,24 @@ class Controller():
         id_hab =  self.newHabRegWindow.getID_hab()
         self.newHabRegW_f_fill_hab_from_id(id_hab)
         
-    def callback_newHabRegW_arq_search(self):
+    def callback_newHabRegW_search(self):
         hab_reg_form = self.newHabRegWindow.getHabRegFromForm(self.d_Hab_est, "search")
         if(hab_reg_form != None):
-            id_hab_reg_form = hab_reg_form.id
-            hab_reg_db = db_hgp.get_hab_reg_from_id(id_hab_reg_form)
-            if (hab_reg_db!=None):
-                self.newHabRegWindow.fillData_hab_reg(hab_reg_db, self.d_Hab_est)
-                self.newHabRegW_f_fill_hab_from_id(hab_reg_db.id_hab)
-            else:
-                CustomDialog("Error","No hay registro con id " + str(id_hab_reg_form)).exec()
-        else:
-            return 0
+            self.f_newHabReg_search_fill(hab_reg_id= hab_reg_form.id, window = self.newHabRegWindow)
         
-    def callback_newHabRegW_arq_update(self):
+    def callback_newHabRegW_update(self):
         hab_reg_form = self.newHabRegWindow.getHabRegFromForm(self.d_Hab_est, "update")
         self.f_habReg_update(hab_reg_form = hab_reg_form, window = self.newHabRegWindow)
 
-    def callback_newHabRegW_arq_create(self):
+    def callback_newHabRegW_create(self):
         hab_reg_form = self.newHabRegWindow.getHabRegFromForm(self.d_Hab_est, "create")
         self.f_habReg_create(hab_reg_form = hab_reg_form, window = self.newHabRegWindow)
         
-    def callback_newHabRegW_arq_cancel(self):
+    def callback_newHabRegW_cancel(self):
         self.newHabRegWindow.close()
         self.mainWindow.mdiAreaMain.removeSubWindow(self.newHabRegWindow.subWindowRef)
 
-    def callback_newHabRegW_arq_delete(self):
+    def callback_newHabRegW_delete(self):
         hab_reg_form = self.newHabRegWindow.getHabRegFromForm(self.d_Hab_est, "delete")
         if(hab_reg_form != None):
             id_hab_reg_form = hab_reg_form.id
@@ -619,6 +609,7 @@ class Controller():
         self.get_values_client()
         self.cliWindow.updateTableView(self.d_Clientes, table_cli_column_names)
 
+
     # General - client
     def f_client_create_from_widget(self, widg):
         client =  widg.getClientFromForm_cli()
@@ -688,6 +679,22 @@ class Controller():
     def f_client_search_from_widget(self, widg):
         doc =  widg.getDocumentFromForm_cli()
         self.f_client_fill_widget_by_doc(widg, doc)
+
+    # General Arquiler
+    def f_newArq_search_fill(self, id_arq ):
+        arq_db = db_hgp.get_arq_by_id(id_arq)
+        if (arq_db!=None):
+            self.newArqWindow.fillData_arq(arq_db)
+
+            self.newArqW_f_fill_hab_from_id(arq_db.id_hab)
+
+            doc = None
+            cli = db_hgp.get_client_by_id(arq_db.id_cli)
+            if (cli == None): doc = None
+            else: doc = cli.nDocumento
+            self.f_client_fill_widget_by_doc(self.newArqWindow, doc)
+        else:
+            CustomDialog("Error","No hay arquiler con id " + str(id_arq)).exec()
 
     ### FUNCTIONS - HABITACION REGISTRO WINDOW
     def habRegW_setup(self, pos_x  = None, pos_y = None, data_front = None, data_back = None):
@@ -824,6 +831,17 @@ class Controller():
             return 0  
 
     # General - habitacion registro
+
+    def f_newHabReg_search_fill(self, hab_reg_id, window):  
+            id_hab_reg_form = hab_reg_id
+            hab_reg_db = db_hgp.get_hab_reg_from_id(id_hab_reg_form)
+            if (hab_reg_db!=None):
+                self.newHabRegWindow.fillData_hab_reg(hab_reg_db, self.d_Hab_est)
+                self.newHabRegW_f_fill_hab_from_id(hab_reg_db.id_hab)
+            else:
+                CustomDialog("Error","No hay registro con id " + str(id_hab_reg_form)).exec()
+                if(window != None): window.setInf_hab_reg("N:Intente de nuevo")
+
     def f_habReg_update(self, hab_reg_form, window):
         err = 0
         if(hab_reg_form != None):
@@ -898,8 +916,8 @@ class Controller():
         return 0
     
     def callback_test(self):
-        new = db_hgp.get_dic_table_arquiler_test(id_hab = None, n_last = None, dateChecking = None, page_size= None, page_current= None)
-
+        new = db_hgp.get_test()
+            
 controllerHGP = Controller()
 
 controllerHGP.get_values_hab()

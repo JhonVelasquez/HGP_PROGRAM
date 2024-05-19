@@ -2,7 +2,7 @@ import sys
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtWidgets import *
-from db_func import *
+from db_model import *
 from PyQt6.QtCore import Qt, QDateTime, QDate
 #from main import *
 import datetime
@@ -86,6 +86,11 @@ class GeneralWindow(QtWidgets.QWidget):
         clearWindow = self.context_menu.addAction("Limpiar ventana")
         clearWindow.triggered.connect(self.clearWindow)
 
+        
+    def clearWindow(self):
+        self.data_front.reset()
+        self.data_back.reset()
+        self.updateUsingWindowData()
 
     def updateUsingWindowData(self):      
         if(self.data_back.page_current == None): self.data_back.page_current = 1
@@ -93,7 +98,9 @@ class GeneralWindow(QtWidgets.QWidget):
         self.updateUsingWindowDataFront()
 
     def updateUsingWindowDataBack(self):      
-        return 0
+        if(self.data_back.has_pages):
+            if(self.data_back.page_current == None): self.data_back.page_current = 1
+            self.updatePageLabel(self.data_back.page_current)
     
     def updateUsingWindowDataFront(self):
         return 0
@@ -106,12 +113,6 @@ class GeneralWindow(QtWidgets.QWidget):
     
     def getWindowDataBack(self):
         return self.data_back
-        
-
-    def clearWindow(self):
-        self.data_front.reset()
-        self.data_back.reset()
-        self.updateUsingWindowData()
 
     def contextMenuEvent(self, event):
         self.context_menu.exec(event.globalPos())
@@ -141,6 +142,13 @@ class GeneralWindow(QtWidgets.QWidget):
     def setTableViewPost(self):
         self.tableContent.setSortingEnabled(True)
 
+    def get_element_selected_text(self, column = 0):
+        r = (self.tableContent.currentRow())
+        if(r == -1):
+            return None
+        else:
+            id_sel = self.tableContent.item(r,column).text()
+            return id_sel
     
     #If there is page_current and page_next    
     def getSizePage(self):
@@ -159,7 +167,7 @@ class GeneralWindow(QtWidgets.QWidget):
     def prevPage(self):
         self.setCurrentPage(self.getCurrentPage()-1)
 
-    def updatePageLabel(self, page_current):
+    def  updatePageLabel(self, page_current):
         self.lblPage.setText(str(page_current))
 
     #cliente section
@@ -214,6 +222,11 @@ class HabWindow(GeneralWindow):
         data_back.has_table = True
         data_back.has_pages = False
         super().__init__(data_back=data_back,*args, **kwargs)
+
+    def get_hab_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return v
+        else: return None
 
     def updateTableView(self, d_Habitaciones: dict[str, Habitacion], columnNames, d_Hab_est, d_Hab_cam, d_Hab_car):
 
@@ -302,6 +315,11 @@ class ArqWindow(GeneralWindow):
         data_back.has_table = True
         data_back.has_pages = True
         super().__init__(data_back=data_back,*args, **kwargs)
+
+    def get_arq_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return int(v)
+        else: return None
         
     def updateTableView(self, d_Arquiler: dict[str, Arquiler], columnNames, d_Empleado, d_Clientes):
         #self.resetTableView()
@@ -363,6 +381,8 @@ class NewArqWindow(GeneralWindow):
         data_back.has_combo_estados = True
         data_back.extra_combo_estados = "(Estado no válido)"
 
+        data_back.combo_estados_in_arquiler = True
+
         super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
 
         self.set_time_checking_now()
@@ -381,6 +401,32 @@ class NewArqWindow(GeneralWindow):
             self.label_estado.setText(str(est.value))
         else:
             self.label_estado.setText("")
+            
+    def clearWindow(self):
+        self.lineEditArqID.setText("")
+        
+        self.lineEditHabID.setText("")
+        self.label_camas.setText("")
+        self.label_precio.setText("")
+        self.label_estado.setText("")
+
+        self.lineEditDocument.setText("")
+        self.lineEditName.setText("")
+        self.lineEditLastName.setText("")
+        self.lineEditCellphone.setText("")
+        self.lineEditAdditionalData.setText("")
+
+        self.labelEstadoID.setText("")
+        self.comboBoxState.setCurrentText("(Estado no válido)")
+        
+        self.clear_time_checking_now()
+        self.clear_time_checkout_now()
+        self.lineEditPrice.setText("")
+        self.lineEditDeuda.setText("")
+
+        self.labelInfHab.setText("-")
+        self.labelInfClient.setText("-")
+        self.labelInfArq.setText("-")
 
     def getID_hab(self):
         return self.lineEditHabID.text()
@@ -599,6 +645,16 @@ class NewHabRegWindow(GeneralWindow):
         self.set_time_end_now()
         self.timeEditHabRegStart.setCalendarPopup(True)
         self.timeEditHabRegEnd.setCalendarPopup(True)
+            
+    def clearWindow(self):
+        self.lineEditHabRegID.setText("")
+        
+        self.lineEditHabID.setText("")
+        self.label_estado.setText("")
+        
+        self.set_time_start_now()
+        self.set_time_end_now()
+        self.comboBoxState.setCurrentIndex(0)
 
     def getID_hab_reg(self):
         return self.lineEditHabRegID.text()
@@ -746,6 +802,11 @@ class ClientWindow(GeneralWindow):
 
         super().__init__(data_back=data_back,*args, **kwargs)
 
+    def get_cli_doc_selected(self):
+        v = self.get_element_selected_text(column=1)
+        if(v != None): return v
+        else: return None
+
     def updateTableView(self, d_Clientes: dict[str, Cliente], columnNames):
 
         self.resetTableView()
@@ -805,10 +866,10 @@ class HabRegWindow(GeneralWindow):
         self.dateEditStart.setCalendarPopup(True)
         self.loadComboOrder()
 
-    def updateUsingWindowDataBack(self):      
-        if(self.data_back.has_pages):
-            if(self.data_back.page_current == None): self.data_back.page_current = 1
-            self.updatePageLabel(self.data_back.page_current)
+    def get_hab_reg_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return int(v)
+        else: return None
 
     def updateUsingWindowDataFront(self):
         if(self.data_front.id_hab_reg == None): self.lineEditID.setText("")
@@ -933,6 +994,16 @@ class NewClientWindow(GeneralWindow):
         data_back.extra_combo_estados = None
 
         super().__init__(data_back=data_back,*args, **kwargs)
+            
+    def clearWindow(self):
+        self.lineEditDocument.setText("")
+        
+        self.lineEditName.setText("")
+        self.lineEditLastName.setText("")
+        
+        self.lineEditCellphone.setText("")
+        self.lineEditAdditionalData.setText("")
+        self.labelInfClient.setText("-")
             
 class NewClientFunctions():
     def fillData(self, widg, c: Cliente):
