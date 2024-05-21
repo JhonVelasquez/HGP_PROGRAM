@@ -211,7 +211,7 @@ class Habitaciones_registro(Base):
            case _:
                return "--"
                    
-table_hab_reg_column_names = { 0 : "ID", 1 : "F/h Inicio", 2 : "F/h Fin", 3 : "Habitacion", 4 : "Estado", 5 : "Ultima modificación"}
+table_hab_reg_column_names = { 0 : "ID", 1 : "F/h Inicio", 2 : "F/h Fin", 3 : "Habitacion", 4 : "Estado", 5 : "Ultimo cambio"}
 table_hab_reg_column_variable = { 0 : Habitaciones_registro.id, 1 : Habitaciones_registro.fechaHoraInicio, 2 : Habitaciones_registro.fechaHoraFin, 3 : Habitaciones_registro.id_hab, 4 : Habitaciones_registro.id_hab_est, 5 : Habitaciones_registro.lastUpdate}
 
 
@@ -258,7 +258,8 @@ class Cliente(Base):
            case _:
                return "--"
                    
-table_cli_column_names = { 0 : "ID", 1 : "nDocumento", 2 : "Nombre", 3 : "Apellido", 4 : "Datos adicionales", 5 : "Celular", 6 : "Ultima modificación"}
+table_cli_column_names = { 0 : "ID", 1 : "nDocumento", 2 : "Nombre", 3 : "Apellido", 4 : "Datos adicionales", 5 : "Celular", 6 : "Ultimo cambio"}
+table_cli_column_variable = { 0 : Cliente.id, 1 : Cliente.nDocumento, 2 : Cliente.nombre, 3 : Cliente.apellido, 4 : Cliente.datosAdicionales, 5 : Cliente.celular, 6 : Cliente.lastUpdate}
 
 class Arquiler(Base):
     __tablename__ = 'Arquiler'
@@ -320,5 +321,6 @@ class Arquiler(Base):
            case _:
                return "--"
                    
-table_arq_column_names = { 0 : "ID", 1 : "Habitacion", 2 : "Cliente", 3 : "Empleado", 4 : "Hab_estado", 5 : "F/h checking", 6 : "F/h checkout", 7 : "Precio", 8 : "Deuda", 9 : "Ultima modificación"}
+table_arq_column_names = { 0 : "ID", 1 : "Habitacion", 2 : "Cliente", 3 : "Empleado", 4 : "Hab_estado", 5 : "F/h checking", 6 : "F/h checkout", 7 : "Precio", 8 : "Deuda", 9 : "Ultimo cambio"}
+table_arq_column_variable = { 0 : Arquiler.id, 1 : Arquiler.id_hab, 2 : Cliente.nombre, 3 : Arquiler.id_emp, 4 : Habitacion_estado.value, 5 : Arquiler.fechaHoraChecking, 6 : Arquiler.fechaHoraCheckout, 7 : Arquiler.precioReal, 8 : Arquiler.deuda, 9 : Arquiler.lastUpdate}
 

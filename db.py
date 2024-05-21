@@ -73,7 +73,7 @@ class DataBase():
             print(f"Unexpected {err=}, {type(err)=}")
             return {}
 
-    def get_dic_table_arquiler(self,id_arq = None, id_hab = None, n_last = None, dateChecking = None, page_size = None, page_current = None):
+    def get_dic_table_arquiler(self,id_arq = None, id_hab = None, order_by= None, n_last = None, dateChecking = None, page_size = None, page_current = None):
         try:
                 
             self.open_session()
@@ -87,6 +87,11 @@ class DataBase():
 
             if(dateChecking != None):
                 result_query = result_query.filter( dateChecking == Arquiler.fechaHoraChecking)
+
+            if(order_by is not None):
+                result_query = result_query.order_by(order_by)
+            else:
+                result_query = result_query.order_by(Arquiler.lastUpdate.desc())
 
             result_query = result_query.outerjoin(Cliente, Arquiler.id_cli == Cliente.id)
             result_query = result_query.outerjoin(Habitaciones_registro, Arquiler.id_hab_reg == Habitaciones_registro.id)
@@ -123,14 +128,14 @@ class DataBase():
             return {}
 
 
-    def get_dic_table_cliente(self,id = None, nDocumento = None, nombre = None, apellido = None,n_last = None, page_size = None, page_current = None):
+    def get_dic_table_cliente(self,id_cli = None, nDocumento = None, nombre = None, apellido = None, celular = None, n_last = None, order_by = None, page_size = None, page_current = None):
         try:
                 
             self.open_session()
             result_query = self.session.query(Cliente)
 
-            if(id != None):
-                result_query = result_query.filter( id == Cliente.id)
+            if(id_cli != None):
+                result_query = result_query.filter( id_cli == Cliente.id)
 
             if(nDocumento != None):
                 result_query = result_query.filter( nDocumento == Cliente.nDocumento)
@@ -142,7 +147,14 @@ class DataBase():
             if(apellido != None):
                 result_query = result_query.filter( apellido == Cliente.apellido)
 
-            result_query = result_query.order_by(Cliente.lastUpdate.desc())
+            if(celular != None):
+                result_query = result_query.filter( celular == Cliente.celular)
+
+    
+            if(order_by is not None):
+                result_query = result_query.order_by(order_by)
+            else:
+                result_query = result_query.order_by(Cliente.lastUpdate.desc())
 
             if(page_current != None and page_size != None):
                 result_query = result_query.offset(page_size*(page_current-1))
@@ -252,7 +264,7 @@ class DataBase():
             return hr[0]
   
     def get_client_by_doc(self, doc):
-        d_cl = self.get_dic_table_cliente(id = None, nDocumento = doc, nombre = None, apellido = None,n_last = 1)
+        d_cl = self.get_dic_table_cliente(id_cli = None, nDocumento = doc, nombre = None, apellido = None,n_last = 1)
         
         if (len(d_cl)==0):
             return None
@@ -260,7 +272,7 @@ class DataBase():
             return list(d_cl.values())[0]
         
     def get_client_by_id(self, cli_id):
-        d_cl = self.get_dic_table_cliente(id = cli_id, nDocumento = None, nombre = None, apellido = None,n_last = 1)
+        d_cl = self.get_dic_table_cliente(id_cli = cli_id, nDocumento = None, nombre = None, apellido = None,n_last = 1)
         
         if (len(d_cl)==0):
             return None

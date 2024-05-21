@@ -59,23 +59,16 @@ class Controller():
         self.d_Habitaciones = {}
         self.d_Habitaciones = db_hgp.get_dic_table_habitacion(asc_piso=True, asc_id_hab=True, asc_precioReferencia=False)
         
-    def get_values_arq(self):
-        new = db_hgp.get_dic_table_arquiler(id_hab = None, n_last = None, dateChecking = None, page_size= self.arqWindow.getSizePage(), page_current= self.arqWindow.getCurrentPage())
-        if(len(new) == 0 and self.arqWindow.getCurrentPage() > 1):
-            self.arqWindow.prevPage()
-        else:
-            self.d_Arquileres = new
+    def get_values_arq(self, id_hab = None, order_by= None):
+        new = db_hgp.get_dic_table_arquiler(id_hab= id_hab,order_by= order_by, n_last = None, dateChecking = None, page_size= self.arqWindow.getSizePage(), page_current= self.arqWindow.getCurrentPage())
+        return new
 
-    def get_values_client(self):
-        new = db_hgp.get_dic_table_cliente(id = None, nDocumento = None, nombre = None, apellido = None, n_last = None, page_size= self.cliWindow.getSizePage(), page_current= self.cliWindow.getCurrentPage())
-        if(len(new) == 0 and self.cliWindow.getCurrentPage() > 1):
-            self.cliWindow.prevPage()
-        else:
-            self.d_Clientes = new
+    def get_values_client(self, id_cli= None, nDocumento = None, nombre = None, apellido = None, celular = None, order_by = None):
+        new = db_hgp.get_dic_table_cliente(id_cli= id_cli, nDocumento = nDocumento, nombre = nombre, apellido = apellido, celular= celular, order_by= order_by,n_last = None, page_size= self.cliWindow.getSizePage(), page_current= self.cliWindow.getCurrentPage())
+        return new
 
-    def get_values_hab_reg(self, id_hab_reg = None, id_hab = None, id_hab_est = None, n_last = None, dateInicio= None, order_by=None):
-        new = db_hgp.get_dic_table_registro(id_hab_reg= id_hab_reg, id_hab= id_hab, id_hab_est= id_hab_est, n_last= n_last, dateInicio= dateInicio, order_by=order_by, page_size= self.habRegWindow.getSizePage(), page_current= self.habRegWindow.getCurrentPage())
-        
+    def get_values_hab_reg(self, id_hab_reg = None, id_hab = None, id_hab_est = None, dateInicio= None, order_by=None):
+        new = db_hgp.get_dic_table_registro(id_hab_reg= id_hab_reg, id_hab= id_hab, id_hab_est= id_hab_est, n_last= None, dateInicio= dateInicio, order_by=order_by, page_size= self.habRegWindow.getSizePage(), page_current= self.habRegWindow.getCurrentPage())
         return new
            
     def init_visual_main(self):
@@ -112,12 +105,12 @@ class Controller():
         sys.exit(app.exec())
 
     def habW_init(self):
-        self.habWindow = HabWindow()
+        self.habWindow = HabWindow(table_column_names= table_hab_column_names)
         self.habWindow.btnUpdate.clicked.connect(self.callback_habW_update)
         self.habWindow.btnHabReg.clicked.connect(self.callback_habW_openHabRegW)
 
-    def arqW_init(self, data_back = None):
-        self.arqWindow = ArqWindow(data_back)
+    def arqW_init(self, data_front = None, data_back = None):
+        self.arqWindow = ArqWindow(data_front= data_front, data_back= data_back, table_column_names= table_arq_column_names)
         self.arqWindow.btnUpdate.clicked.connect(self.callback_arqW_update)
         self.arqWindow.btnNewEdit.clicked.connect(self.callback_arqW_openNewArqW)
 
@@ -125,8 +118,8 @@ class Controller():
         self.arqWindow.btnNext.clicked.connect(self.callback_arqW_next)
 
 
-    def cliW_init(self, data_back = None):
-        self.cliWindow = ClientWindow(data_back)
+    def cliW_init(self, data_front = None, data_back = None):
+        self.cliWindow = ClientWindow(data_front= data_front, data_back= data_back, table_column_names= table_cli_column_names)
         self.cliWindow.btnUpdate.clicked.connect(self.callback_cliW_update)
         self.cliWindow.btnNewEdit.clicked.connect(self.callback_cliW_openNewCliW)
 
@@ -190,13 +183,13 @@ class Controller():
 
     #CALLBACKS - MAIN WINDOW 
     def callback_mainW_openHabW(self):
-        self.habW_show_update(foc= "True")
+        self.habW_show_update(foc= True)
     
     def callback_mainW_openArqW(self):
-        self.arqW_show_update(foc= "True")
+        self.arqW_show_update(foc= True)
     
     def callback_mainW_openClientW(self):
-        self.cliW_show_update(foc= "True")
+        self.cliW_show_update(foc= True, reset_back= True)
 
     def callback_mainW_sunat(self):
         webbrowser.open('https://e-menu.sunat.gob.pe/cl-ti-itmenu/MenuInternet.htm?pestana=*&agrupacion=*')
@@ -206,49 +199,49 @@ class Controller():
         self.habW_update_values_table()
 
     def callback_habW_openHabRegW(self):
-        self.habRegW_show_update(foc = True, reset_back=True)
+        self.habRegW_show_update(foc= True, reset_back= True)
     
     #CALLBACKS - ARQUILER WINDOW
     def callback_arqW_update(self):
-        self.arqWindow.setCurrentPage(1)
-        self.arqW_show_update(foc="True")
+        self.arqWindow.pushFrontDataToBack()
+        self.arqW_show_update(foc=True,set_page= 1)
 
     def callback_arqW_openNewArqW(self):
-        self.newArqW_show_update(foc= "True")
+        self.newArqW_show_update(foc= True)
         id_sel = self.arqWindow.get_arq_id_selected()
         if(id_sel != None): self.f_newArq_search_fill(id_arq= id_sel)
 
     def callback_arqW_prev(self):
         if(self.arqWindow.getCurrentPage() >= 2):
             self.arqWindow.prevPage()
-            self.arqW_show_update(foc="False")
+            self.arqW_show_update(foc=False)
     
     def callback_arqW_next(self):
         if(self.d_Arquileres != None):
             if(len(self.d_Arquileres) != 0):
                 self.arqWindow.nextPage()
-                self.arqW_show_update(foc="False")
+                self.arqW_show_update(foc=False)
     
     #CALLBACKS - CLIENTE WINDOW
     def callback_cliW_update(self):
-        self.cliWindow.setCurrentPage(1)
-        self.cliW_show_update(foc="True")
+        self.cliWindow.pushFrontDataToBack()
+        self.cliW_show_update(foc=True,set_page=1)
 
     def callback_cliW_openNewCliW(self):
-        self.newCliW_show_update(foc= "True")
+        self.newCliW_show_update(foc= True)
         doc_sel = self.cliWindow.get_cli_doc_selected()
         if(doc_sel != None): self.f_client_fill_widget_by_doc(doc= doc_sel, widg= self.newCliWindow)
 
     def callback_cliW_prev(self):
         if(self.cliWindow.getCurrentPage() >= 2):
             self.cliWindow.prevPage()
-            self.cliW_show_update(foc="False")
+            self.cliW_show_update(foc=False)
     
     def callback_cliW_next(self):
         if(self.d_Clientes != None):
             if(len(self.d_Clientes) != 0):
                 self.cliWindow.nextPage()
-                self.cliW_show_update(foc="False")
+                self.cliW_show_update(foc=False)
     
     #CALLBACKS - HABITACION REGISTRO WINDOW
     def callback_habRegW_update(self):
@@ -256,7 +249,7 @@ class Controller():
         self.habRegW_show_update(foc=True, set_page= 1)
 
     def callback_habRegW_openNewHabRegW(self):
-        self.newHabRegW_show_update(foc= "True")
+        self.newHabRegW_show_update(foc= True)
         id_sel = self.habRegWindow.get_hab_reg_id_selected()
         if(id_sel != None): self.f_newHabReg_search_fill(hab_reg_id= id_sel, window= None)
 
@@ -366,7 +359,7 @@ class Controller():
                         db_hgp.update_Arquiler(arq_form,arq_db)
                         self.f_newArq_search_fill( arq_db.id)
                         self.newArqWindow.setInf_arq("U:Listo")
-                        self.arqW_show_update(foc= "False")
+                        self.arqW_show_update(foc= False)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
@@ -418,7 +411,7 @@ class Controller():
                         b = db_hgp.create_Arquiler(arq_form)
                         self.newArqWindow.lineEditArqID.setText(str(b.id))
                         self.newArqWindow.setInf_arq("C:Listo")
-                        self.arqW_show_update(foc= "False")
+                        self.arqW_show_update(foc= False)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se creó o intente de nuevo.\n\n"+str(err)).exec()
@@ -439,7 +432,7 @@ class Controller():
                 try:
                         db_hgp.delete_Arquiler(arq_db)
                         self.newArqWindow.setInf_arq("C:Listo")
-                        self.arqW_show_update(foc= "False")
+                        self.arqW_show_update(foc= False)
                         if(arq_db.hab_reg != None and arq_db.hab_reg.id != None):
                             db_hgp.delete_Hab_Reg(arq_db.hab_reg)
                             self.habRegW_show_update(foc= False, reset_back=True)
@@ -529,7 +522,6 @@ class Controller():
     ### FUNCTIONS - HABITACION WINDOW
 
     def habW_show_update(self, foc):
-        if(foc == False): foc = "True" #foc is Flase by default when interruption
 
         if(self.habWindow.isCreated == False):
             self.habW_init()
@@ -537,77 +529,138 @@ class Controller():
             self.create_visual_sub_window(wid = self.habWindow)
         else:
             self.habW_update_values_table()
-            if(foc == "True"):
+            if(foc == True):
                 self.habWindow.subWindowRef.setFocus()
     
     def habW_update_values_table(self):
         self.get_values_hab()
-        self.habWindow.updateTableView(self.d_Habitaciones, table_hab_column_names, self.d_Hab_est, self.d_Hab_cam, self.d_Hab_car)
+        self.habWindow.updateTableView(self.d_Habitaciones, self.d_Hab_est, self.d_Hab_cam, self.d_Hab_car)
 
     ### FUNCTIONS - ARQUILER WINDOW
 
-    def arqW_setup(self, pos_x  = None, pos_y = None, data_back = None):
-        self.arqW_init(data_back)
+    def arqW_setup(self, pos_x = None, pos_y= None, data_back= None, data_front= None):
+        self.arqW_init(data_front=data_front, data_back=data_back)
         self.arqW_update_values_table()
         self.create_visual_sub_window(self.arqWindow,pos_x, pos_y)
 
-    def arqW_show_update(self, foc):
-        if(foc == False): foc = "True" #foc is Flase by default when interruption
+    def arqW_show_update(self, foc, set_page = None, reset_back = None):
         
         if(self.arqWindow.isCreated == False):
             self.arqW_setup()
         else:
             curr_act=None
-            if((foc == "False")): curr_act = self.mainWindow.mdiAreaMain.activeSubWindow()
+            if((foc == False)): curr_act = self.mainWindow.mdiAreaMain.activeSubWindow()
 
             pos_x = self.arqWindow.subWindowRef.pos().x()
             pos_y = self.arqWindow.subWindowRef.pos().y()
+            data_front = self.arqWindow.getWindowDataFront()
             data_back = self.arqWindow.getWindowDataBack()
+            if(set_page != None): data_back.set_pageCurrent(page=1)
+            if(reset_back == True): data_back.reset()
 
             self.mainWindow.mdiAreaMain.removeSubWindow(self.arqWindow.subWindowRef)
-            self.arqW_setup(pos_x, pos_y, data_back)
+            self.arqW_setup(pos_x = pos_x, pos_y = pos_y, data_front = data_front, data_back = data_back)
 
-            if(foc == "True"):
+            if(foc == True):
                 self.arqWindow.subWindowRef.setFocus()
             elif((curr_act != None)):
                 self.mainWindow.mdiAreaMain.setActiveSubWindow(curr_act)
 
     def arqW_update_values_table(self):
-        self.get_values_arq()
-        self.get_values_client()
-        self.arqWindow.updateTableView(self.d_Arquileres, table_arq_column_names, self.d_Empleado, self.d_Clientes)
+        wd = self.arqWindow.getWindowDataBack()
+        
+        id_hab = None
+        order_by = None
+
+        if(wd.id_hab != None): id_hab = wd.id_hab  
+        if(wd.order_type != None and wd.order_feature != None):
+            column_name = wd.order_feature
+            order_type = wd.order_type
+            order_by = None
+            var = None
+            for k in table_arq_column_names.keys():
+                if(table_arq_column_names[k] == column_name):
+                    var = table_arq_column_variable[k]
+                    if(order_type == "asce"):
+                        order_by = var.asc()
+                    elif(order_type == "desc" ):
+                        order_by = var.desc()   
+
+        new = self.get_values_arq(id_hab= id_hab, order_by= order_by)
+        if(len(new) == 0 and self.arqWindow.getCurrentPage() > 1):
+            self.arqWindow.prevPage()
+            self.d_Arquileres = self.get_values_arq(id_hab= id_hab, order_by= order_by)
+        else:
+            self.d_Arquileres = new
+
+        self.arqWindow.updateTableView(self.d_Arquileres, self.d_Empleado)
     
     ### FUNCTIONS - CLIENT WINDOW
 
-    def cliW_setup(self, pos_x  = None, pos_y = None, data_back = None):
-        self.cliW_init(data_back)
+    def cliW_setup(self, pos_x  = None, pos_y = None, data_back = None, data_front = None):
+        self.cliW_init(data_front=data_front, data_back=data_back)
         self.cliW_update_values_table()
         self.create_visual_sub_window(self.cliWindow,pos_x, pos_y)
 
-    def cliW_show_update(self, foc):
-        if(foc == False): foc = "True" #foc is Flase by default when interruption
+    def cliW_show_update(self, foc, set_page = None, reset_back = None):
         
         if(self.cliWindow.isCreated == False):
             self.cliW_setup()
         else:
             curr_act=None
-            if((foc == "False")): curr_act = self.mainWindow.mdiAreaMain.activeSubWindow()
+            if((foc == False)): curr_act = self.mainWindow.mdiAreaMain.activeSubWindow()
 
             pos_x = self.cliWindow.subWindowRef.pos().x()
             pos_y = self.cliWindow.subWindowRef.pos().y()
+            data_front = self.cliWindow.getWindowDataFront()
             data_back = self.cliWindow.getWindowDataBack()
+            if(set_page != None): data_back.set_pageCurrent(page=1)
+            if(reset_back == True): data_back.reset()
 
             self.mainWindow.mdiAreaMain.removeSubWindow(self.cliWindow.subWindowRef)
-            self.cliW_setup(pos_x , pos_y, data_back)
+            self.cliW_setup(pos_x = pos_x, pos_y = pos_y, data_front = data_front, data_back = data_back)
 
-            if(foc == "True"):
+            if(foc == True):
                 self.cliWindow.subWindowRef.setFocus()
             elif((curr_act != None)):
                 self.mainWindow.mdiAreaMain.setActiveSubWindow(curr_act)
 
     def cliW_update_values_table(self):
-        self.get_values_client()
-        self.cliWindow.updateTableView(self.d_Clientes, table_cli_column_names)
+        wd = self.cliWindow.getWindowDataBack()
+
+        id_cli = None
+        nDocumento = None
+        nombre = None
+        apellido = None
+        celular = None
+        order_by = None
+
+        if(wd.id_cli != None and wd.id_cli.isnumeric()): id_cli = int(wd.id_cli)
+        if(wd.document != None): nDocumento = wd.document
+        if(wd.name != None): nombre = wd.name
+        if(wd.surname != None): apellido = wd.surname     
+        if(wd.cellphone != None): celular = wd.cellphone  
+        if(wd.order_type != None and wd.order_feature != None):
+            column_name = wd.order_feature
+            order_type = wd.order_type
+            order_by = None
+            var = None
+            for k in table_cli_column_names.keys():
+                if(table_cli_column_names[k] == column_name):
+                    var = table_cli_column_variable[k]
+                    if(order_type == "asce"):
+                        order_by = var.asc()
+                    elif(order_type == "desc" ):
+                        order_by = var.desc()    
+
+        new = self.get_values_client( id_cli= id_cli, nDocumento = nDocumento, nombre = nombre, apellido = apellido, celular= celular, order_by= order_by)
+        if(len(new) == 0 and self.cliWindow.getCurrentPage() > 1):
+            self.cliWindow.prevPage()
+            self.d_Clientes =  self.get_values_client( id_cli= id_cli, nDocumento = nDocumento, nombre = nombre, apellido = apellido, celular= celular, order_by= order_by)
+        else:
+            self.d_Clientes = new
+
+        self.cliWindow.updateTableView(self.d_Clientes)
 
 
     # General - client
@@ -620,7 +673,7 @@ class Controller():
                     client.lastUpdate = datetime.now()
                     db_hgp.create_Client(client)
                     widg.setInf_cli("N:Listo")
-                    self.cliW_show_update(foc= "False")
+                    self.cliW_show_update(foc= False,reset_back= True)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se creó o intente de nuevo.\n\n"+str(err)).exec()
                     widg.setInf_cli("N:Intente de nuevo")
@@ -639,7 +692,7 @@ class Controller():
                 try:
                     db_hgp.delete_Client(cl_db)
                     widg.setInf_cli("N:Eliminado")
-                    self.cliW_show_update(foc= "False")
+                    self.cliW_show_update(foc= False, reset_back= True)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
                     widg.setInf_cli("N:Intente de nuevo")
@@ -656,7 +709,7 @@ class Controller():
                     client.lastUpdate = datetime.now()
                     db_hgp.update_Client(client,cl_db)
                     widg.setInf_cli("N:Listo")
-                    self.cliW_show_update(foc= "False")
+                    self.cliW_show_update(foc= False, reset_back= True)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
                     widg.setInf_cli("N:Intente de nuevo")
@@ -698,7 +751,7 @@ class Controller():
 
     ### FUNCTIONS - HABITACION REGISTRO WINDOW
     def habRegW_setup(self, pos_x  = None, pos_y = None, data_front = None, data_back = None):
-        self.habRegW_init(data_front, data_back)
+        self.habRegW_init(data_front=data_front, data_back=data_back)
         self.habRegW_update_values_table()
         self.create_visual_sub_window(self.habRegWindow,pos_x, pos_y)
     
@@ -713,11 +766,11 @@ class Controller():
             pos_y = self.habRegWindow.subWindowRef.pos().y()
             data_front = self.habRegWindow.getWindowDataFront()
             data_back = self.habRegWindow.getWindowDataBack()
-            if(set_page != None): data_back.set_pageCurrent(page=1)
+            if(set_page != None): data_back.set_pageCurrent(page=set_page)
             if(reset_back == True): data_back.reset()
 
             self.mainWindow.mdiAreaMain.removeSubWindow(self.habRegWindow.subWindowRef)
-            self.habRegW_setup(pos_x, pos_y, data_front, data_back)
+            self.habRegW_setup(pos_x = pos_x, pos_y = pos_y, data_front = data_front, data_back = data_back)
 
             if(foc == True):
                 self.habRegWindow.subWindowRef.setFocus()
@@ -772,26 +825,23 @@ class Controller():
     ### FUNCTIONS - NEW CLIENT WINDOW
 
     def newCliW_show_update(self, foc):
-        if(foc == False): foc = "True" #foc is Flase by default when interruption
         
         if(self.newCliWindow.isCreated == False):
             self.newCliW_init()
             self.create_visual_sub_window(self.newCliWindow)
         else:
-            if(foc == "True"):
+            if(foc == True):
                 self.newCliWindow.subWindowRef.setFocus()  
 
-    
     ### FUNCTIONS - NEW ARQUILER WINDOW
 
     def newArqW_show_update(self, foc):
-        if(foc == False): foc = "True" #foc is Flase by default when interruption
         
         if(self.newArqWindow.isCreated == False):
             self.newArqW_init()
             self.create_visual_sub_window(self.newArqWindow)
         else:
-            if(foc == "True"):
+            if(foc == True):
                 self.newArqWindow.subWindowRef.setFocus()
     
     def newArqW_f_fill_hab_from_id(self, id_hab):
@@ -809,13 +859,12 @@ class Controller():
     ### FUNCTIONS - NEW HABITACION REGISTRO WINDOW
 
     def newHabRegW_show_update(self, foc):
-        if(foc == False): foc = "True" #foc is Flase by default when interruption
         
         if(self.newHabRegWindow.isCreated == False):
             self.newHabRegW_init()
             self.create_visual_sub_window(self.newHabRegWindow)
         else:
-            if(foc == "True"):
+            if(foc == True):
                 self.newHabRegWindow.subWindowRef.setFocus()
 
     def newHabRegW_f_fill_hab_from_id(self, id_hab):

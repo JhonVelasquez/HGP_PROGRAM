@@ -11,19 +11,28 @@ global controllerHGP
 
 class Window_data():
     page_current = 1
-    page_size = 10
-    consumed = False
 
     id_hab_reg = None
     fecha_inicio = None
     id_hab = None
     id_hab_est = None
 
+    id_cli = None
+    document = None
+    name = None
+    surname = None
+    cellphone = None
+
     hab_est = None
 
     order_type = None
     order_feature = None
-
+    
+    #permanent values
+    consumed = False
+    page_size = 10
+    default_type = None
+    default_feature = None
     path_gui = None
     title_window = None
     has_table = None
@@ -33,21 +42,26 @@ class Window_data():
     extra_combo_estados = None
     combo_estados_in_arquiler = None
     
+    has_combos_orderby = None
 
     def reset(self):
         self.page_current = 1
-        self.page_size = 10
-        self.consumed = False
-
         self.id_hab_reg = None
         self.fecha_inicio = None
         self.id_hab = None
         self.id_hab_est = None
 
+        self.id_cli = None
+        self.document = None
+        self.name = None
+        self.surname = None
+        self.cellphone = None
+
         self.hab_est = None
 
         self.order_type = None
         self.order_feature = None
+
         return 0   
     def set_pageCurrent(self, page):
         self.page_current = page
@@ -76,8 +90,13 @@ class GeneralWindow(QtWidgets.QWidget):
         if (data_front == None): self.data_front = Window_data()
         else: self.data_front = data_front
 
-        if(self.data_back.has_client_section==True): self.newCliFuncs = NewClientFunctions()
+        if(self.data_back.has_client_section ==True): self.newCliFuncs = NewClientFunctions()
         if(self.data_back.has_combo_estados == True): self.loadComboState(d_Hab_est)
+
+        if(self.data_back.has_combos_orderby == True):
+            data_back.default_type = "desc"
+            data_back.default_feature = "Ultimo cambio"
+            self.loadComboOrder()
 
         #loading graphics
         self.updateUsingWindowData()
@@ -103,12 +122,17 @@ class GeneralWindow(QtWidgets.QWidget):
             self.updatePageLabel(self.data_back.page_current)
     
     def updateUsingWindowDataFront(self):
+        if(self.data_back.has_combos_orderby): self.updateCombosOrderBy()
         return 0
     
     def pushFrontDataToBack(self):
+        if (self.data_back.has_combos_orderby):    
+            self.data_back.order_feature = self.data_front.order_feature
+            self.data_back.order_type = self.data_front.order_type
         return 0
     
-    def getWindowDataFront(self):
+    def getWindowDataFront(self):  
+        if(self.data_back.has_combos_orderby): self.getDataFrontCombosOrder()
         return 0
     
     def getWindowDataBack(self):
@@ -202,6 +226,35 @@ class GeneralWindow(QtWidgets.QWidget):
         if(self.data_back.extra_combo_estados != None):
             self.comboBoxState.addItem(self.data_back.extra_combo_estados)
             self.comboBoxState.setCurrentText(self.data_back.extra_combo_estados)
+    #combo box order by
+
+    def updateCombosOrderBy(self):
+        if(self.data_front.order_type == None): self.comboBoxOrderType.setCurrentText(self.data_back.default_type)
+        else: self.comboBoxOrderType.setCurrentText(str(self.data_front.order_type))
+
+        if(self.data_front.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.data_back.default_feature)
+        else: self.comboBoxOrderFeature.setCurrentText(str(self.data_front.order_feature))
+    
+    def getDataFrontCombosOrder(self):
+        order_type = self.comboBoxOrderType.currentText()
+        if(order_type == ""): order_type = self.data_back.default_type
+        self.data_front.order_type = order_type
+        
+        order_feature = self.comboBoxOrderFeature.currentText()
+        if(order_feature == ""): order_feature = self.data_back.default_feature
+        self.data_front.order_feature = order_feature
+
+    def loadComboOrder(self):
+        self.comboBoxOrderType.clear()
+        self.comboBoxOrderType.addItem("asce")
+        self.comboBoxOrderType.addItem("desc")
+        self.comboBoxOrderType.setCurrentText(self.data_back.default_type)
+
+        self.comboBoxOrderFeature.clear()
+        for col in self.table_column_names.values():
+            self.comboBoxOrderFeature.addItem(col)
+        self.comboBoxOrderFeature.setCurrentText(self.data_back.default_feature)
+           
 
 class MainWindow(GeneralWindow):
     
@@ -215,12 +268,13 @@ class MainWindow(GeneralWindow):
     
 class HabWindow(GeneralWindow):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, table_column_names, *args, **kwargs):
         data_back = Window_data()
         data_back.path_gui = './ui/hab.ui'
         data_back.title_window = "Habitaciones"
         data_back.has_table = True
         data_back.has_pages = False
+        self.table_column_names = table_column_names
         super().__init__(data_back=data_back,*args, **kwargs)
 
     def get_hab_id_selected(self):
@@ -228,11 +282,11 @@ class HabWindow(GeneralWindow):
         if(v != None): return v
         else: return None
 
-    def updateTableView(self, d_Habitaciones: dict[str, Habitacion], columnNames, d_Hab_est, d_Hab_cam, d_Hab_car):
+    def updateTableView(self, d_Habitaciones: dict[str, Habitacion], d_Hab_est, d_Hab_cam, d_Hab_car):
 
         #self.resetTableView()
         n_row = len(d_Habitaciones)
-        n_col = len (columnNames.values())
+        n_col = len (self.table_column_names.values())
 
         self.tableContent.setColumnCount(n_col)
         self.tableContent.setRowCount(n_row)
@@ -242,11 +296,11 @@ class HabWindow(GeneralWindow):
             header_item = QtWidgets.QTableWidgetItem(str(i+1))
             self.tableContent.setVerticalHeaderItem(i, header_item)
 
-        for j,name in enumerate(columnNames.values()):
+        for j,name in enumerate(self.table_column_names.values()):
             self.tableContent.setHorizontalHeaderItem(j,QtWidgets.QTableWidgetItem(name))
 
         for i,key in enumerate(d_Habitaciones.keys()):
-            for j,col_name in enumerate(columnNames.values()):
+            for j,col_name in enumerate(self.table_column_names.values()):
                 var =  d_Habitaciones[key].getTableElementByPos(j, d_Hab_est, d_Hab_cam, d_Hab_car) 
                 element = None
                 if(j == 7 or j == 8): # lists of hab_reg in var
@@ -308,24 +362,47 @@ class HabWindow(GeneralWindow):
 
 class ArqWindow(GeneralWindow):
 
-    def __init__(self, data_back: Window_data, *args, **kwargs):
+    def __init__(self, data_front: Window_data, data_back: Window_data, table_column_names, *args, **kwargs):
         if(data_back == None): data_back = Window_data()
         data_back.path_gui = './ui/arq.ui'
         data_back.title_window = "Arquileres"
         data_back.has_table = True
         data_back.has_pages = True
-        super().__init__(data_back=data_back,*args, **kwargs)
+
+        data_back.has_combos_orderby = True
+        self.table_column_names = table_column_names
+        super().__init__(data_back=data_back,data_front=data_front,*args, **kwargs)
 
     def get_arq_id_selected(self):
         v = self.get_element_selected_text(column=0)
         if(v != None): return int(v)
         else: return None
-        
-    def updateTableView(self, d_Arquiler: dict[str, Arquiler], columnNames, d_Empleado, d_Clientes):
+
+    def updateUsingWindowDataFront(self):
+        super().updateUsingWindowDataFront()
+
+        if(self.data_front.id_hab == None): self.lineEditHabID.setText("")
+        else: self.lineEditHabID.setText(str(self.data_front.id_hab)) 
+
+    def getWindowDataFront(self):
+        super().getWindowDataFront()
+
+        id_hab = self.lineEditHabID.text()
+        if(id_hab == ""): id_hab = None
+        self.data_front.id_hab = id_hab
+
+        return self.data_front
+
+    def pushFrontDataToBack(self):
+        self.getWindowDataFront() #pullgin dataFront from UI
+        self.data_back.id_hab = self.data_front.id_hab
+        super().pushFrontDataToBack()
+
+    def updateTableView(self, d_Arquiler: dict[str, Arquiler], d_Empleado):
         #self.resetTableView()
 
         n_row = len(d_Arquiler)
-        n_col = len (columnNames.values())
+        n_col = len (self.table_column_names.values())
 
         self.tableContent.setColumnCount(n_col)
         self.tableContent.setRowCount(n_row)
@@ -335,11 +412,11 @@ class ArqWindow(GeneralWindow):
             header_item = QtWidgets.QTableWidgetItem(str(i+1))
             self.tableContent.setVerticalHeaderItem(i, header_item)
 
-        for j,name in enumerate(columnNames.values()):
+        for j,name in enumerate(self.table_column_names.values()):
             self.tableContent.setHorizontalHeaderItem(j,QtWidgets.QTableWidgetItem(name))
 
         for i,key in enumerate(d_Arquiler.keys()):
-            for j,col_name in enumerate(columnNames.values()):
+            for j,col_name in enumerate(self.table_column_names.values()):
 
                 client_id = d_Arquiler[key].id_cli
                 #cli_info_str =  d_Clientes[client_id].nDocumento + ", " + d_Clientes[client_id].nombre + " " + d_Clientes[client_id].apellido
@@ -349,7 +426,7 @@ class ArqWindow(GeneralWindow):
                 var_raw = d_Arquiler[key].getTableElementByPos(j, d_Empleado)
                 if(var_raw==None):
                     var = "-"
-                elif("F/h checking" == col_name or "F/h checkout" == col_name or  "Ultima modificación" == col_name):
+                elif("F/h checking" == col_name or "F/h checkout" == col_name or  "Ultimo cambio" == col_name):
                     var = QtCore.QDateTime.fromString(var_raw, "yyyy-MM-dd hh:mm:ss")
                     #print(var_raw)
                 else:
@@ -789,7 +866,7 @@ class NewHabRegWindow(GeneralWindow):
     
 class ClientWindow(GeneralWindow):
 
-    def __init__(self, data_back, *args, **kwargs):
+    def __init__(self, data_front: Window_data, data_back: Window_data, table_column_names, *args, **kwargs):
         if(data_back == None): data_back = Window_data()
         data_back.path_gui = './ui/client.ui'
         data_back.title_window = "Clientes"
@@ -800,19 +877,72 @@ class ClientWindow(GeneralWindow):
         data_back.has_combo_estados = False
         data_back.extra_combo_estados = "(Estado no válido)"
 
-        super().__init__(data_back=data_back,*args, **kwargs)
+        data_back.has_combos_orderby = True
+        self.table_column_names = table_column_names
+
+        super().__init__(data_back=data_back,data_front=data_front,*args, **kwargs)
 
     def get_cli_doc_selected(self):
         v = self.get_element_selected_text(column=1)
         if(v != None): return v
         else: return None
 
-    def updateTableView(self, d_Clientes: dict[str, Cliente], columnNames):
+    def updateUsingWindowDataFront(self):
+        super().updateUsingWindowDataFront()
+        if(self.data_front.id_cli == None): self.lineEditCliID.setText("")
+        else: self.lineEditCliID.setText(str(self.data_front.id_cli))
+
+        if(self.data_front.document == None): self.lineEditDocumento.setText("")
+        else: self.lineEditDocumento.setText(str(self.data_front.document))
+        
+        if(self.data_front.name == None): self.lineEditNombre.setText("")
+        else: self.lineEditNombre.setText(str(self.data_front.name))
+
+        if(self.data_front.surname == None): self.lineEditApellido.setText("")
+        else: self.lineEditApellido.setText(str(self.data_front.surname))
+        
+        if(self.data_front.cellphone == None): self.lineEditCelular.setText("")
+        else: self.lineEditCelular.setText(str(self.data_front.cellphone))   
+
+    def getWindowDataFront(self):
+        super().getWindowDataFront()
+        id_cli = self.lineEditCliID.text()
+        if(id_cli == ""): id_cli = None
+        self.data_front.id_cli = id_cli
+
+        document = self.lineEditDocumento.text()
+        if (document == ""): document = None
+        self.data_front.document = document
+
+        name = self.lineEditNombre.text()
+        if(name == ""): name = None
+        self.data_front.name = name
+
+        surname = self.lineEditApellido.text()
+        if (surname == ""): surname = None
+        self.data_front.surname = surname
+
+        cellphone = self.lineEditCelular.text()
+        if(cellphone == ""): cellphone = None
+        self.data_front.cellphone = cellphone
+
+        return self.data_front
+
+    def pushFrontDataToBack(self):
+        self.getWindowDataFront() #pullgin dataFront from UI
+        self.data_back.id_cli = self.data_front.id_cli
+        self.data_back.document = self.data_front.document
+        self.data_back.name = self.data_front.name
+        self.data_back.surname = self.data_front.surname
+        self.data_back.cellphone = self.data_front.cellphone
+        super().pushFrontDataToBack()
+    
+    def updateTableView(self, d_Clientes: dict[str, Cliente]):
 
         self.resetTableView()
 
         n_row = len(d_Clientes)
-        n_col = len (columnNames.values())
+        n_col = len (self.table_column_names.values())
 
         self.tableContent.setColumnCount(n_col)
         self.tableContent.setRowCount(n_row)
@@ -822,16 +952,16 @@ class ClientWindow(GeneralWindow):
             header_item = QtWidgets.QTableWidgetItem(str(i+1))
             self.tableContent.setVerticalHeaderItem(i, header_item)
 
-        for j,name in enumerate(columnNames.values()):
+        for j,name in enumerate(self.table_column_names.values()):
             self.tableContent.setHorizontalHeaderItem(j,QtWidgets.QTableWidgetItem(name))
 
         for i,key in enumerate(d_Clientes.keys()):
-            for j,col_name in enumerate(columnNames.values()):
+            for j,col_name in enumerate(self.table_column_names.values()):
 
                 var_raw = d_Clientes[key].getTableElementByPos(j)
                 if(var_raw==None):
                     var = "-"
-                elif("Ultima modificación" == col_name):
+                elif("Ultimo cambio" == col_name):
                     var = QtCore.QDateTime.fromString(var_raw, "yyyy-MM-dd hh:mm:ss")
                     #print(var_raw)
                 else:
@@ -859,12 +989,12 @@ class HabRegWindow(GeneralWindow):
         data_back.extra_combo_estados = ""
         data_back.combo_estados_in_arquiler = False
 
+        data_back.has_combos_orderby = True
         self.table_column_names = table_column_names
 
         super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,data_front=data_front,*args, **kwargs)
 
         self.dateEditStart.setCalendarPopup(True)
-        self.loadComboOrder()
 
     def get_hab_reg_id_selected(self):
         v = self.get_element_selected_text(column=0)
@@ -872,6 +1002,7 @@ class HabRegWindow(GeneralWindow):
         else: return None
 
     def updateUsingWindowDataFront(self):
+        super().updateUsingWindowDataFront()
         if(self.data_front.id_hab_reg == None): self.lineEditID.setText("")
         else: self.lineEditID.setText(str(self.data_front.id_hab_reg))
 
@@ -884,23 +1015,9 @@ class HabRegWindow(GeneralWindow):
         if(self.data_front.hab_est == None): self.comboBoxState.setCurrentText("")
         else: self.comboBoxState.setCurrentText(str(self.data_front.hab_est))
 
-        if(self.data_front.order_type == None): self.comboBoxOrderType.setCurrentText("desc")
-        else: self.comboBoxOrderType.setCurrentText(str(self.data_front.order_type))
-
-        if(self.data_front.order_feature == None): self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
-        else: self.comboBoxOrderFeature.setCurrentText(str(self.data_front.order_feature))
-    
-    def pushFrontDataToBack(self):
-        self.getWindowDataFront() #pullgin dataFront from UI
-        self.data_back.id_hab = self.data_front.id_hab
-        self.data_back.fecha_inicio = self.data_front.fecha_inicio
-        self.data_back.id_hab_reg = self.data_front.id_hab_reg
-        self.data_back.hab_est = self.data_front.hab_est
-        self.data_back.id_hab_est = self.data_front.id_hab_est
-        self.data_back.order_feature = self.data_front.order_feature
-        self.data_back.order_type = self.data_front.order_type
 
     def getWindowDataFront(self):
+        super().getWindowDataFront()
         id_hab_reg = self.lineEditID.text()
         if(id_hab_reg == ""): id_hab_reg = None
         self.data_front.id_hab_reg = id_hab_reg
@@ -916,33 +1033,24 @@ class HabRegWindow(GeneralWindow):
         hab_est = self.comboBoxState.currentText()
         if(hab_est == ""): hab_est = None
         self.data_front.hab_est = hab_est
-        
-        order_type = self.comboBoxOrderType.currentText()
-        if(order_type == ""): order_type = "desc"
-        self.data_front.order_type = order_type
-        
-        order_feature = self.comboBoxOrderFeature.currentText()
-        if(order_feature == ""): order_feature = self.table_column_names[5]
-        self.data_front.order_feature = order_feature
+
         return self.data_front
+
+    def pushFrontDataToBack(self):
+        self.getWindowDataFront() #pullgin dataFront from UI
+        self.data_back.id_hab = self.data_front.id_hab
+        self.data_back.fecha_inicio = self.data_front.fecha_inicio
+        self.data_back.id_hab_reg = self.data_front.id_hab_reg
+        self.data_back.hab_est = self.data_front.hab_est
+        self.data_back.id_hab_est = self.data_front.id_hab_est
+        super().pushFrontDataToBack()
 
     def set_time_start_now(self):
         self.dateEditStart.setDateTime(QDateTime.currentDateTime())
 
     def clear_time_start_now(self):
         self.dateEditStart.setDateTime(self.dateEditStart.minimumDateTime())
-   
-    def loadComboOrder(self):
-        self.comboBoxOrderType.clear()
-        self.comboBoxOrderType.addItem("asce")
-        self.comboBoxOrderType.addItem("desc")
-        self.comboBoxOrderType.setCurrentText("desc")
-
-        self.comboBoxOrderFeature.clear()
-        for col in self.table_column_names.values():
-            self.comboBoxOrderFeature.addItem(col)
-        self.comboBoxOrderFeature.setCurrentText(self.table_column_names[5])
-           
+ 
     def updateTableView(self, d_Hab_Reg: dict[str, Habitaciones_registro], d_Hab_est):
         #self.resetTableView()
 
@@ -967,7 +1075,7 @@ class HabRegWindow(GeneralWindow):
                 var_raw = d_Hab_Reg[key].getTableElementByPos(j, d_Hab_est)
                 if(var_raw==None):
                     var = "-"
-                elif("F/h Inicio" == col_name or "F/h Fin" == col_name or "Ultima modificación" == col_name):
+                elif("F/h Inicio" == col_name or "F/h Fin" == col_name or "Ultimo cambio" == col_name):
                     var = QtCore.QDateTime.fromString(var_raw, "yyyy-MM-dd hh:mm:ss")
                 else: 
                     var = var_raw
