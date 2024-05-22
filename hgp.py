@@ -59,8 +59,9 @@ class Controller():
         self.d_Habitaciones = {}
         self.d_Habitaciones = db_hgp.get_dic_table_habitacion(asc_piso=True, asc_id_hab=True, asc_precioReferencia=False)
         
-    def get_values_arq(self, id_hab = None, order_by= None):
-        new = db_hgp.get_dic_table_arquiler(id_hab= id_hab,order_by= order_by, n_last = None, dateChecking = None, page_size= self.arqWindow.getSizePage(), page_current= self.arqWindow.getCurrentPage())
+    def get_values_arq(self,id_arq= None, id_hab= None, document= None, name= None, surname= None, id_hab_reg= None, id_hab_est= None, fecha_checking= None, order_by= None):
+        new = db_hgp.get_dic_table_arquiler(id_arq= id_arq, id_hab= id_hab, document= document, name= name, surname= surname, id_hab_reg= id_hab_reg, id_hab_est= id_hab_est, fecha_checking= fecha_checking, order_by= order_by, n_last = None, page_size= self.arqWindow.getSizePage(), page_current= self.arqWindow.getCurrentPage())
+        
         return new
 
     def get_values_client(self, id_cli= None, nDocumento = None, nombre = None, apellido = None, celular = None, order_by = None):
@@ -110,16 +111,18 @@ class Controller():
         self.habWindow.btnHabReg.clicked.connect(self.callback_habW_openHabRegW)
 
     def arqW_init(self, data_front = None, data_back = None):
-        self.arqWindow = ArqWindow(data_front= data_front, data_back= data_back, table_column_names= table_arq_column_names)
+        self.arqWindow = ArqWindow(data_front= data_front, data_back= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_arq_column_names, cmb_order_by_name= arq_cmb_order_by_name)
         self.arqWindow.btnUpdate.clicked.connect(self.callback_arqW_update)
         self.arqWindow.btnNewEdit.clicked.connect(self.callback_arqW_openNewArqW)
 
         self.arqWindow.btnPrev.clicked.connect(self.callback_arqW_prev)
         self.arqWindow.btnNext.clicked.connect(self.callback_arqW_next)
 
+        self.arqWindow.btnUpdateTimeChecking.clicked.connect(self.callback_habRegW_update_time_checking)     
+        self.arqWindow.btnClearTimeChecking.clicked.connect(self.callback_habRegW_clear_time_checking)
 
     def cliW_init(self, data_front = None, data_back = None):
-        self.cliWindow = ClientWindow(data_front= data_front, data_back= data_back, table_column_names= table_cli_column_names)
+        self.cliWindow = ClientWindow(data_front= data_front, data_back= data_back, table_column_names= table_cli_column_names, cmb_order_by_name= cli_cmb_order_by_name)
         self.cliWindow.btnUpdate.clicked.connect(self.callback_cliW_update)
         self.cliWindow.btnNewEdit.clicked.connect(self.callback_cliW_openNewCliW)
 
@@ -127,7 +130,7 @@ class Controller():
         self.cliWindow.btnNext.clicked.connect(self.callback_cliW_next)
 
     def habRegW_init(self, data_front = None, data_back = None):
-        self.habRegWindow = HabRegWindow(data_front= data_front, data_back= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names)
+        self.habRegWindow = HabRegWindow(data_front= data_front, data_back= data_back, d_Hab_est= self.d_Hab_est, table_column_names= table_hab_reg_column_names, cmb_order_by_name= hab_reg_cmb_order_by_name)
         self.habRegWindow.btnUpdate.clicked.connect(self.callback_habRegW_update)
         self.habRegWindow.btnNewEdit.clicked.connect(self.callback_habRegW_openNewHabRegW)
 
@@ -222,6 +225,12 @@ class Controller():
                 self.arqWindow.nextPage()
                 self.arqW_show_update(foc=False)
     
+    def callback_habRegW_update_time_checking(self):
+        self.arqWindow.set_time_checking_now()
+
+    def callback_habRegW_clear_time_checking(self):
+        self.arqWindow.clear_time_checking_now()
+
     #CALLBACKS - CLIENTE WINDOW
     def callback_cliW_update(self):
         self.cliWindow.pushFrontDataToBack()
@@ -569,27 +578,48 @@ class Controller():
     def arqW_update_values_table(self):
         wd = self.arqWindow.getWindowDataBack()
         
+        id_arq = None
         id_hab = None
+        document = None
+        name = None
+        surname = None
+        id_hab_reg = None
+        id_hab_est = None
+        fecha_checking = None
         order_by = None
 
+        if(wd.id_arq != None and wd.id_arq.isnumeric()): id_arq = int(wd.id_arq)
         if(wd.id_hab != None): id_hab = wd.id_hab  
+        if(wd.document != None): document = wd.document  
+        if(wd.name != None): name = wd.name  
+        if(wd.surname != None): surname = wd.surname  
+        if(wd.id_hab_reg != None and wd.id_hab_reg.isnumeric()): id_hab_reg = int(wd.id_hab_reg)
+        if(wd.id_hab_est != None and wd.id_hab_est.isnumeric()): id_hab_est = int(wd.id_hab_est)
+        
+        if(wd.hab_est != None): 
+            hab_est_value = wd.hab_est
+            for k in self.d_Hab_est.keys():
+                if(self.d_Hab_est[k].value == hab_est_value):
+                    id_hab_est = self.d_Hab_est[k].id
+        
+        if(wd.fecha_checking != None): fecha_checking = wd.fecha_checking.toPyDateTime()
         if(wd.order_type != None and wd.order_feature != None):
-            column_name = wd.order_feature
+            order_feature = wd.order_feature
             order_type = wd.order_type
             order_by = None
             var = None
-            for k in table_arq_column_names.keys():
-                if(table_arq_column_names[k] == column_name):
-                    var = table_arq_column_variable[k]
+            for k in arq_cmb_order_by_name.keys():
+                if(arq_cmb_order_by_name[k] == order_feature):
+                    var = arq_cmb_order_by_feature[k]
                     if(order_type == "asce"):
                         order_by = var.asc()
                     elif(order_type == "desc" ):
                         order_by = var.desc()   
 
-        new = self.get_values_arq(id_hab= id_hab, order_by= order_by)
+        new = self.get_values_arq(id_arq= id_arq, id_hab= id_hab, document= document, name= name, surname= surname, id_hab_reg= id_hab_reg, id_hab_est= id_hab_est, fecha_checking= fecha_checking, order_by= order_by)
         if(len(new) == 0 and self.arqWindow.getCurrentPage() > 1):
             self.arqWindow.prevPage()
-            self.d_Arquileres = self.get_values_arq(id_hab= id_hab, order_by= order_by)
+            self.d_Arquileres = self.get_values_arq(id_arq= id_arq, id_hab= id_hab, document= document, name= name, surname= surname, id_hab_reg= id_hab_reg, id_hab_est= id_hab_est, fecha_checking= fecha_checking, order_by= order_by)
         else:
             self.d_Arquileres = new
 
@@ -641,13 +671,13 @@ class Controller():
         if(wd.surname != None): apellido = wd.surname     
         if(wd.cellphone != None): celular = wd.cellphone  
         if(wd.order_type != None and wd.order_feature != None):
-            column_name = wd.order_feature
+            order_feature = wd.order_feature
             order_type = wd.order_type
             order_by = None
             var = None
-            for k in table_cli_column_names.keys():
-                if(table_cli_column_names[k] == column_name):
-                    var = table_cli_column_variable[k]
+            for k in cli_cmb_order_by_name.keys():
+                if(cli_cmb_order_by_name[k] == order_feature):
+                    var = cli_cmb_order_by_feature[k]
                     if(order_type == "asce"):
                         order_by = var.asc()
                     elif(order_type == "desc" ):
@@ -799,13 +829,13 @@ class Controller():
                     id_hab_est = self.d_Hab_est[k].id
 
         if(wd.order_type != None and wd.order_feature != None):
-            column_name = wd.order_feature
+            order_feature = wd.order_feature
             order_type = wd.order_type
             order_by = None
             var = None
-            for k in table_hab_reg_column_names.keys():
-                if(table_hab_reg_column_names[k] == column_name):
-                    var = table_hab_reg_column_variable[k]
+            for k in hab_reg_cmb_order_by_name.keys():
+                if(hab_reg_cmb_order_by_name[k] == order_feature):
+                    var = hab_reg_cmb_order_by_feature[k]
                     if(order_type == "asce"):
                         order_by = var.asc()
                     elif(order_type == "desc" ):

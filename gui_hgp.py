@@ -16,6 +16,7 @@ class Window_data():
     fecha_inicio = None
     id_hab = None
     id_hab_est = None
+    hab_est = None
 
     id_cli = None
     document = None
@@ -23,7 +24,8 @@ class Window_data():
     surname = None
     cellphone = None
 
-    hab_est = None
+    id_arq = None
+    fecha_checking = None
 
     order_type = None
     order_feature = None
@@ -50,6 +52,7 @@ class Window_data():
         self.fecha_inicio = None
         self.id_hab = None
         self.id_hab_est = None
+        self.hab_est = None
 
         self.id_cli = None
         self.document = None
@@ -57,7 +60,8 @@ class Window_data():
         self.surname = None
         self.cellphone = None
 
-        self.hab_est = None
+        self.id_arq = None
+        self.fecha_checking = None
 
         self.order_type = None
         self.order_feature = None
@@ -74,6 +78,9 @@ class GeneralWindow(QtWidgets.QWidget):
     context_menu = None
 
     table_column_names = None
+
+    cmb_order_by_name = None
+
     data_front = None
 
     def __init__(self, data_back: Window_data = None, data_front: Window_data = None, d_Hab_est:dict = None, *args, **kwargs):
@@ -251,7 +258,7 @@ class GeneralWindow(QtWidgets.QWidget):
         self.comboBoxOrderType.setCurrentText(self.data_back.default_type)
 
         self.comboBoxOrderFeature.clear()
-        for col in self.table_column_names.values():
+        for col in self.cmb_order_by_name.values():
             self.comboBoxOrderFeature.addItem(col)
         self.comboBoxOrderFeature.setCurrentText(self.data_back.default_feature)
            
@@ -362,40 +369,110 @@ class HabWindow(GeneralWindow):
 
 class ArqWindow(GeneralWindow):
 
-    def __init__(self, data_front: Window_data, data_back: Window_data, table_column_names, *args, **kwargs):
+    def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, cmb_order_by_name: None, *args, **kwargs):
         if(data_back == None): data_back = Window_data()
         data_back.path_gui = './ui/arq.ui'
         data_back.title_window = "Arquileres"
         data_back.has_table = True
         data_back.has_pages = True
+        data_back.page_size = 15
+
+        data_back.has_combo_estados = True
+        data_back.extra_combo_estados = ""
+        data_back.combo_estados_in_arquiler = True
 
         data_back.has_combos_orderby = True
         self.table_column_names = table_column_names
-        super().__init__(data_back=data_back,data_front=data_front,*args, **kwargs)
+        self.cmb_order_by_name = cmb_order_by_name
+        super().__init__(data_back=data_back,data_front=data_front,d_Hab_est=d_Hab_est,*args, **kwargs)
 
     def get_arq_id_selected(self):
         v = self.get_element_selected_text(column=0)
         if(v != None): return int(v)
         else: return None
 
+    def set_time_checking_now(self):
+        self.dateEditChecking.setDateTime(QDateTime.currentDateTime())
+
+    def clear_time_checking_now(self):
+        self.dateEditChecking.setDateTime(self.dateEditChecking.minimumDateTime())
+
     def updateUsingWindowDataFront(self):
         super().updateUsingWindowDataFront()
+
+        if(self.data_front.id_arq == None): self.lineEditArqID.setText("")
+        else: self.lineEditArqID.setText(str(self.data_front.id_arq)) 
 
         if(self.data_front.id_hab == None): self.lineEditHabID.setText("")
         else: self.lineEditHabID.setText(str(self.data_front.id_hab)) 
 
+        if(self.data_front.document == None): self.lineEditDocumento.setText("")
+        else: self.lineEditDocumento.setText(str(self.data_front.document))
+        
+        if(self.data_front.name == None): self.lineEditNombre.setText("")
+        else: self.lineEditNombre.setText(str(self.data_front.name))
+
+        if(self.data_front.surname == None): self.lineEditApellido.setText("")
+        else: self.lineEditApellido.setText(str(self.data_front.surname))
+
+        if(self.data_front.id_hab_reg == None): self.lineEditHabRegID.setText("")
+        else: self.lineEditHabRegID.setText(str(self.data_front.id_hab_reg))
+
+        if(self.data_front.hab_est == None): self.comboBoxState.setCurrentText("")
+        else: self.comboBoxState.setCurrentText(str(self.data_front.hab_est))
+
+        if(self.data_front.fecha_checking == None): self.clear_time_checking_now()
+        else: self.dateEditChecking.setDateTime(self.data_front.fecha_checking)
+
     def getWindowDataFront(self):
         super().getWindowDataFront()
+
+        id_arq = self.lineEditArqID.text()
+        if(id_arq == ""): id_arq = None
+        self.data_front.id_arq = id_arq
 
         id_hab = self.lineEditHabID.text()
         if(id_hab == ""): id_hab = None
         self.data_front.id_hab = id_hab
 
+        document = self.lineEditDocumento.text()
+        if (document == ""): document = None
+        self.data_front.document = document
+
+        name = self.lineEditNombre.text()
+        if(name == ""): name = None
+        self.data_front.name = name
+
+        surname = self.lineEditApellido.text()
+        if (surname == ""): surname = None
+        self.data_front.surname = surname
+        
+        id_hab_reg = self.lineEditHabRegID.text()
+        if(id_hab_reg == ""): id_hab_reg = None
+        self.data_front.id_hab_reg = id_hab_reg
+
+        fecha_checking = self.dateEditChecking.dateTime()
+        if(fecha_checking == self.dateEditChecking.minimumDateTime()): fecha_checking = None
+        self.data_front.fecha_checking = fecha_checking
+        
+        hab_est = self.comboBoxState.currentText()
+        if(hab_est == ""): hab_est = None
+        self.data_front.hab_est = hab_est
+
+
         return self.data_front
 
     def pushFrontDataToBack(self):
         self.getWindowDataFront() #pullgin dataFront from UI
+        self.data_back.id_arq = self.data_front.id_arq
         self.data_back.id_hab = self.data_front.id_hab
+        self.data_back.document = self.data_front.document
+        self.data_back.name = self.data_front.name
+        self.data_back.surname = self.data_front.surname
+        self.data_back.id_hab_reg = self.data_front.id_hab_reg
+        self.data_back.fecha_checking = self.data_front.fecha_checking
+        self.data_back.hab_est = self.data_front.hab_est
+        self.data_back.id_hab_est = self.data_front.id_hab_est
         super().pushFrontDataToBack()
 
     def updateTableView(self, d_Arquiler: dict[str, Arquiler], d_Empleado):
@@ -866,12 +943,13 @@ class NewHabRegWindow(GeneralWindow):
     
 class ClientWindow(GeneralWindow):
 
-    def __init__(self, data_front: Window_data, data_back: Window_data, table_column_names, *args, **kwargs):
+    def __init__(self, data_front: Window_data, data_back: Window_data, table_column_names, cmb_order_by_name: None, *args, **kwargs):
         if(data_back == None): data_back = Window_data()
         data_back.path_gui = './ui/client.ui'
         data_back.title_window = "Clientes"
         data_back.has_table = True
         data_back.has_pages = True
+        data_back.page_size = 10
         data_back.has_client_section = True
 
         data_back.has_combo_estados = False
@@ -879,7 +957,7 @@ class ClientWindow(GeneralWindow):
 
         data_back.has_combos_orderby = True
         self.table_column_names = table_column_names
-
+        self.cmb_order_by_name = cmb_order_by_name
         super().__init__(data_back=data_back,data_front=data_front,*args, **kwargs)
 
     def get_cli_doc_selected(self):
@@ -977,12 +1055,13 @@ class ClientWindow(GeneralWindow):
 
 class HabRegWindow(GeneralWindow):
 
-    def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, *args, **kwargs):
+    def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, cmb_order_by_name: None, *args, **kwargs):
         if(data_back==None): data_back = Window_data()
         data_back.path_gui = './ui/hab_reg.ui'
         data_back.title_window = "Registros de habitación"
         data_back.has_table = True
         data_back.has_pages = True
+        data_back.page_size = 10
         data_back.has_client_section = False
 
         data_back.has_combo_estados = True
@@ -991,7 +1070,7 @@ class HabRegWindow(GeneralWindow):
 
         data_back.has_combos_orderby = True
         self.table_column_names = table_column_names
-
+        self.cmb_order_by_name = cmb_order_by_name
         super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,data_front=data_front,*args, **kwargs)
 
         self.dateEditStart.setCalendarPopup(True)

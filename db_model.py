@@ -149,7 +149,17 @@ class Habitacion(Base):
                 return  None
 
                    
-table_hab_column_names = { 0 : "ID", 1 : "Piso", 2 : "Nombre", 3 : "Camas", 4 : "Descripcion", 5 : "Precio Base", 6 : "Caracteristicas", 7 : "Estado anterior", 8 : "Estado actual"}
+table_hab_column_names = { 
+    0 : "ID", 
+    1 : "Piso", 
+    2 : "Nombre", 
+    3 : "Camas", 
+    4 : "Descripcion", 
+    5 : "Precio Base", 
+    6 : "Caracteristicas", 
+    7 : "Estado anterior", 
+    8 : "Estado actual"
+    }
 
 """ 
 class Habitacion_caracteristica_join(Base):
@@ -211,9 +221,25 @@ class Habitaciones_registro(Base):
            case _:
                return "--"
                    
-table_hab_reg_column_names = { 0 : "ID", 1 : "F/h Inicio", 2 : "F/h Fin", 3 : "Habitacion", 4 : "Estado", 5 : "Ultimo cambio"}
-table_hab_reg_column_variable = { 0 : Habitaciones_registro.id, 1 : Habitaciones_registro.fechaHoraInicio, 2 : Habitaciones_registro.fechaHoraFin, 3 : Habitaciones_registro.id_hab, 4 : Habitaciones_registro.id_hab_est, 5 : Habitaciones_registro.lastUpdate}
+table_hab_reg_column_names = { 
+    0 : "ID", 
+    1 : "F/h Inicio", 
+    2 : "F/h Fin", 
+    3 : "Habitacion", 
+    4 : "Estado", 
+    5 : "Ultimo cambio"
+    }
 
+hab_reg_cmb_order_by_name = table_hab_reg_column_names
+
+hab_reg_cmb_order_by_feature = { 
+    0 : Habitaciones_registro.id, 
+    1 : Habitaciones_registro.fechaHoraInicio, 
+    2 : Habitaciones_registro.fechaHoraFin, 
+    3 : Habitaciones_registro.id_hab, 
+    4 : Habitaciones_registro.id_hab_est, 
+    5 : Habitaciones_registro.lastUpdate
+    }
 
 class Empleado(Base):
     __tablename__ = 'Empleado'
@@ -258,8 +284,25 @@ class Cliente(Base):
            case _:
                return "--"
                    
-table_cli_column_names = { 0 : "ID", 1 : "nDocumento", 2 : "Nombre", 3 : "Apellido", 4 : "Datos adicionales", 5 : "Celular", 6 : "Ultimo cambio"}
-table_cli_column_variable = { 0 : Cliente.id, 1 : Cliente.nDocumento, 2 : Cliente.nombre, 3 : Cliente.apellido, 4 : Cliente.datosAdicionales, 5 : Cliente.celular, 6 : Cliente.lastUpdate}
+table_cli_column_names = { 
+    0 : "ID", 
+    1 : "nDocumento", 
+    2 : "Nombre", 
+    3 : "Apellido", 
+    4 : "Datos adicionales", 
+    5 : "Celular", 
+    6 : "Ultimo cambio"
+    }
+cli_cmb_order_by_name = table_cli_column_names
+cli_cmb_order_by_feature = { 
+    0 : Cliente.id, 
+    1 : Cliente.nDocumento, 
+    2 : Cliente.nombre, 
+    3 : Cliente.apellido, 
+    4 : Cliente.datosAdicionales, 
+    5 : Cliente.celular, 
+    6 : Cliente.lastUpdate
+    }
 
 class Arquiler(Base):
     __tablename__ = 'Arquiler'
@@ -295,25 +338,30 @@ class Arquiler(Base):
            case 3:
                return self.getEmpleadoString(d_Empleado)
            case 4:
-               if(self.hab_reg != None and self.hab_reg.hab_estado != None ):
-                return str(self.hab_reg.id) + ", " + str(self.hab_reg.hab_estado.value)
+               if(self.hab_reg != None):
+                return str(self.hab_reg.id)
                else:
                 return "-"
            case 5:
+               if(self.hab_reg != None and self.hab_reg.hab_estado != None ):
+                return str(self.hab_reg.hab_estado.value)
+               else:
+                return "-"
+           case 6:
                 if(self.fechaHoraChecking != None):
                     return str(self.fechaHoraChecking.replace(microsecond=0))
                 else:
                     return None
-           case 6:
+           case 7:
                 if(self.fechaHoraCheckout != None):
                     return str(self.fechaHoraCheckout.replace(microsecond=0))
                 else:
                     return None
-           case 7:
-               return (self.precioReal)
            case 8:
-               return (self.deuda)
+               return (self.precioReal)
            case 9:
+               return (self.deuda)
+           case 10:
                 if(self.lastUpdate != None):
                     return str(self.lastUpdate.replace(microsecond=0))
                 else:
@@ -321,6 +369,46 @@ class Arquiler(Base):
            case _:
                return "--"
                    
-table_arq_column_names = { 0 : "ID", 1 : "Habitacion", 2 : "Cliente", 3 : "Empleado", 4 : "Hab_estado", 5 : "F/h checking", 6 : "F/h checkout", 7 : "Precio", 8 : "Deuda", 9 : "Ultimo cambio"}
-table_arq_column_variable = { 0 : Arquiler.id, 1 : Arquiler.id_hab, 2 : Cliente.nombre, 3 : Arquiler.id_emp, 4 : Habitacion_estado.value, 5 : Arquiler.fechaHoraChecking, 6 : Arquiler.fechaHoraCheckout, 7 : Arquiler.precioReal, 8 : Arquiler.deuda, 9 : Arquiler.lastUpdate}
-
+table_arq_column_names = { 
+    0 : "ID",
+    1 : "Habitacion",
+    2 : "Cliente",
+    3 : "Empleado",
+    4 : "Hab_reg",
+    5 : "Estado",
+    6 : "F/h checking",
+    7 : "F/h checkout",
+    8 : "Precio",
+    9 : "Deuda",
+    10 : "Ultimo cambio"
+    }
+arq_cmb_order_by_name = {
+    0 : "Arquiler ID", 
+    1 : "Habitacion ID", 
+    2 : "Cli-ID", 
+    3 : "Cli-nombre", 
+    4 : "Cli-apellido", 
+    5 : "Empleado", 
+    6 : "Hab_reg", 
+    7 : "Estado", 
+    8 : "F/h checking",
+    9 : "F/h checkout", 
+    10 : "Precio", 
+    11 : "Deuda", 
+    12 : "Ultimo cambio"
+    }
+arq_cmb_order_by_feature = { 
+    0 : Arquiler.id, 
+    1 : Arquiler.id_hab, 
+    2 : Cliente.nDocumento, 
+    3 : Cliente.nombre, 
+    4 : Cliente.apellido, 
+    5 : Arquiler.id_emp, 
+    6 : Habitaciones_registro.id, 
+    7 : Habitacion_estado.value, 
+    8 : Arquiler.fechaHoraChecking, 
+    9 : Arquiler.fechaHoraCheckout, 
+    10 : Arquiler.precioReal, 
+    11 : Arquiler.deuda, 
+    12 : Arquiler.lastUpdate
+    }

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>292</width>
-    <height>381</height>
+    <width>381</width>
+    <height>530</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -179,6 +179,9 @@
         <enum>QFrame::Raised</enum>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
+        <property name="spacing">
+         <number>3</number>
+        </property>
         <property name="topMargin">
          <number>0</number>
         </property>
@@ -196,16 +199,76 @@
          <widget class="QLineEdit" name="lineEditArqID"/>
         </item>
         <item>
+         <widget class="QLabel" name="labelHab">
+          <property name="text">
+           <string>Habitacion ID</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditHabID"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelHab_2">
+          <property name="text">
+           <string>Documento</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditDocumento"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Nombre</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditNombre"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Apellido</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditApellido"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Habitacion registro ID</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="lineEditHabRegID"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Estado</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboBoxState"/>
+        </item>
+        <item>
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Fecha Inicio</string>
+           <string>Checking</string>
           </property>
          </widget>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_7">
           <item>
-           <widget class="QDateEdit" name="dateEditStart">
+           <widget class="QDateEdit" name="dateEditChecking">
             <property name="maximumDate">
              <date>
               <year>3000</year>
@@ -226,7 +289,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="btnUpdateTimeStart">
+           <widget class="QPushButton" name="btnUpdateTimeChecking">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -261,7 +324,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="btnClearTimeStart">
+           <widget class="QPushButton" name="btnClearTimeChecking">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -296,26 +359,6 @@
            </widget>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QLabel" name="labelHab">
-          <property name="text">
-           <string>Habitacion ID</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="lineEditHabID"/>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Estado</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QComboBox" name="comboBoxState"/>
         </item>
         <item>
          <widget class="QLabel" name="label_4">

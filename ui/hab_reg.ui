@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>294</width>
-    <height>383</height>
+    <height>356</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -184,6 +184,9 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>3</number>
+          </property>
           <property name="topMargin">
            <number>0</number>
           </property>

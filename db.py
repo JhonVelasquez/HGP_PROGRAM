@@ -73,7 +73,7 @@ class DataBase():
             print(f"Unexpected {err=}, {type(err)=}")
             return {}
 
-    def get_dic_table_arquiler(self,id_arq = None, id_hab = None, order_by= None, n_last = None, dateChecking = None, page_size = None, page_current = None):
+    def get_dic_table_arquiler(self, id_arq= None, id_hab= None, document= None, name= None, surname= None, id_hab_reg= None, id_hab_est= None, fecha_checking:datetime= None, order_by= None, n_last = None, page_size = None, page_current = None):
         try:
                 
             self.open_session()
@@ -85,8 +85,27 @@ class DataBase():
             if(id_hab != None):
                 result_query = result_query.filter( id_hab == Arquiler.id_hab)
 
-            if(dateChecking != None):
-                result_query = result_query.filter( dateChecking == Arquiler.fechaHoraChecking)
+            if(document != None):
+                result_query = result_query.filter( document == Cliente.nDocumento)
+
+            if(name != None):
+                result_query = result_query.filter( name == Cliente.nombre)
+
+            if(surname != None):
+                result_query = result_query.filter( surname == Cliente.apellido)
+
+            if(id_hab_reg != None):
+                result_query = result_query.filter( id_hab_reg == Arquiler.id_hab_reg)
+
+            if(id_hab_est != None):
+                result_query = result_query.filter( id_hab_est == Habitaciones_registro.id_hab_est)
+
+            if(fecha_checking != None):
+                dt_t_min = datetime(year=fecha_checking.year, month=fecha_checking.month, day=fecha_checking.day, hour=0, minute=0, second=0, microsecond=0)
+                dt_t_max = dt_t_min + timedelta(days=1)
+
+                result_query = result_query.filter( and_(dt_t_min <= Arquiler.fechaHoraChecking, dt_t_max > Arquiler.fechaHoraChecking))
+
 
             if(order_by is not None):
                 result_query = result_query.order_by(order_by)
