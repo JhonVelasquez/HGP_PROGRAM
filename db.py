@@ -64,8 +64,14 @@ class DataBase():
             self.close_session()
 
             d_hab = {}
+            now =datetime.now()
             for hab in result_fetch:
-                hab.last_registers = self.get_dic_table_registro(id_hab = hab.id, n_last = 5, maximum_date_inicio = datetime.now(), order_by = Habitaciones_registro.fechaHoraInicio.desc(), inverted= True)
+                order_by = Habitaciones_registro.fechaHoraInicio.desc()
+                inverted = True
+                hab.last_registers =        self.get_dic_table_registro(inicio_min= None, inicio_max= now, empty_inicio= False, fin_min= None, fin_max= now, empty_fin= False, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
+                hab.now_def_registers =     self.get_dic_table_registro(inicio_min= None, inicio_max= now, empty_inicio= False, fin_min= now, fin_max= None, empty_fin= False, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
+                hab.now_undef_registers =   self.get_dic_table_registro(inicio_min= None, inicio_max= now, empty_inicio= False, fin_min= None, fin_max= None, empty_fin= True, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
+                hab.fut_registers =         self.get_dic_table_registro(inicio_min= now, inicio_max= None, empty_inicio= False, fin_min= None, fin_max= None, empty_fin= None, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
                 d_hab[hab.id]=hab
             return d_hab
         
@@ -196,7 +202,7 @@ class DataBase():
             print(f"Unexpected {err=}, {type(err)=}")
             return {}
         
-    def get_dic_table_registro(self,id_hab_reg = None, id_hab_est = None, id_hab = None, n_last = None, dateInicio:datetime = None, page_size = None, page_current = None, maximum_date_inicio:datetime = None, order_by = None, inverted = False):
+    def get_dic_table_registro2(self,id_hab_reg = None, id_hab_est = None, id_hab = None, n_last = None, dateInicio:datetime = None, page_size = None, page_current = None, maximum_date_inicio:datetime = None, order_by = None, inverted = False):
         try:
             self.open_session()
             result_query = self.session.query(Habitaciones_registro)
@@ -248,7 +254,76 @@ class DataBase():
         except Exception as err:
             print(f"Unexpected {err=}, {type(err)=}")
             return {}
+           
+    def get_dic_table_registro(self,id_hab_reg = None, id_hab_est = None, id_hab = None, n_last = None, dateInicio:datetime = None, page_size = None, page_current = None, inicio_min:datetime = None, inicio_max:datetime = None, empty_inicio:bool = None, fin_min:datetime = None, fin_max:datetime = None, empty_fin:bool = None, order_by = None, inverted = False):
+        try:
+            self.open_session()
+            result_query = self.session.query(Habitaciones_registro)
+
+            if(id_hab_reg != None):
+                result_query = result_query.filter( id_hab_reg == Habitaciones_registro.id)
+
+            if(id_hab != None):
+                result_query = result_query.filter( id_hab == Habitaciones_registro.id_hab)
+
+            if(id_hab_est != None):
+                result_query = result_query.filter( id_hab_est == Habitaciones_registro.id_hab_est)
+
+            if(dateInicio != None):
+                dt_t_min = datetime(year=dateInicio.year, month=dateInicio.month, day=dateInicio.day, hour=0, minute=0, second=0, microsecond=0)
+                dt_t_max = dt_t_min + timedelta(days=1)
+
+                result_query = result_query.filter( and_(dt_t_min <= Habitaciones_registro.fechaHoraInicio, dt_t_max > Habitaciones_registro.fechaHoraInicio))
+
+            if(inicio_min != None):
+                result_query = result_query.filter(Habitaciones_registro.fechaHoraInicio >=  inicio_min)
+            if(inicio_max != None):
+                result_query = result_query.filter(Habitaciones_registro.fechaHoraInicio <=  inicio_max)
+            if(fin_min != None):
+                result_query = result_query.filter(Habitaciones_registro.fechaHoraFin >=  fin_min)
+            if(fin_max != None):
+                result_query = result_query.filter(Habitaciones_registro.fechaHoraFin <=  fin_max)
+            if(empty_inicio != None):
+                if(empty_inicio == True):
+                    result_query = result_query.filter(Habitaciones_registro.fechaHoraInicio ==  None)
+                else:
+                    result_query = result_query.filter(Habitaciones_registro.fechaHoraInicio !=  None)
+
+            if(empty_fin != None):
+                if(empty_fin == True):
+                    result_query = result_query.filter(Habitaciones_registro.fechaHoraFin ==  None)
+                else:
+                    result_query = result_query.filter(Habitaciones_registro.fechaHoraFin !=  None)
+  
+            
+            if(order_by is not None):
+                result_query = result_query.order_by(order_by)
+            else:
+                result_query = result_query.order_by(Habitaciones_registro.lastUpdate.desc())
+
+            if(page_current != None and page_size != None):
+                result_query = result_query.offset(page_size*(page_current-1))
+                result_fetch = result_query.limit(page_size).all()
+            else:
+                if(n_last != None):
+                    result_fetch = result_query.limit(n_last).all()
+                else:
+                    result_fetch = result_query.all()
+
+            self.close_session()
+
+            res = result_fetch
+            if(inverted): res.reverse()
+
+            d={}
+            for r in res:
+                d[r.id]=r
+
+            return d
         
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+            return {}
     def get_dic_table_from_class(self,clss):
         try:
                 
@@ -299,7 +374,7 @@ class DataBase():
             return list(d_cl.values())[0]
 
     def get_arq_by_id(self, id):
-        d_arq = self.get_dic_table_arquiler(id_arq= id, n_last = 1, dateChecking = None)
+        d_arq = self.get_dic_table_arquiler(id_arq= id, n_last = 1)
         
         if (len(d_arq)==0):
             return None
@@ -338,9 +413,9 @@ class DataBase():
             if(c.apellido != c_d.apellido): q_d["apellido"] = c.apellido
             if(c.datosAdicionales != c_d.datosAdicionales): q_d["datosAdicionales"] = c.datosAdicionales
             if(c.celular != c_d.celular): q_d["celular"] = c.celular
-            if(c.lastUpdate != c_d.lastUpdate): q_d["lastUpdate"] = c.lastUpdate
 
             if (len(q_d)!=0):
+                if(c.lastUpdate != c_d.lastUpdate): q_d["lastUpdate"] = c.lastUpdate
                 self.open_session()
                 self.session.query(Cliente).filter(c_d.id == Cliente.id).update(q_d)
                 self.session.commit()
@@ -361,9 +436,9 @@ class DataBase():
             if(arq.deuda != arq_d.deuda): q_d["deuda"] = arq.deuda
             if(arq.fechaHoraChecking != arq_d.fechaHoraChecking): q_d["fechaHoraChecking"] = arq.fechaHoraChecking
             if(arq.fechaHoraCheckout != arq_d.fechaHoraCheckout): q_d["fechaHoraCheckout"] = arq.fechaHoraCheckout
-            if(arq.lastUpdate != arq_d.lastUpdate): q_d["lastUpdate"] = arq.lastUpdate
 
             if (len(q_d)!=0):
+                if(arq.lastUpdate != arq_d.lastUpdate): q_d["lastUpdate"] = arq.lastUpdate
                 self.open_session()
                 self.session.query(Arquiler).filter(arq_d.id == Arquiler.id).update(q_d)
                 self.session.commit()
@@ -380,9 +455,9 @@ class DataBase():
             if(hab_reg.id_hab_est != hab_reg_d.id_hab_est): q_d["id_hab_est"] = hab_reg.id_hab_est
             if(hab_reg.fechaHoraInicio != hab_reg_d.fechaHoraInicio): q_d["fechaHoraInicio"] = hab_reg.fechaHoraInicio
             if(hab_reg.fechaHoraFin != hab_reg_d.fechaHoraFin): q_d["fechaHoraFin"] = hab_reg.fechaHoraFin
-            if(hab_reg.lastUpdate != hab_reg_d.lastUpdate): q_d["lastUpdate"] = hab_reg.lastUpdate
-
+            
             if (len(q_d)!=0):
+                if(hab_reg.lastUpdate != hab_reg_d.lastUpdate): q_d["lastUpdate"] = hab_reg.lastUpdate
                 self.open_session()
                 self.session.query(Habitaciones_registro).filter(hab_reg_d.id == Habitaciones_registro.id).update(q_d)
                 self.session.commit()
@@ -403,13 +478,13 @@ class DataBase():
             raise
 
     def delete_Client(self, c_d: Cliente):
-        self.delete_object(self, Cliente, c_d)
+        self.delete_object( Cliente, c_d)
 
     def delete_Arquiler(self, a_d: Arquiler):
-        self.delete_object(self, Arquiler, a_d)
+        self.delete_object( Arquiler, a_d)
     
     def delete_Hab_Reg(self, hr_d: Habitaciones_registro):
-        self.delete_object(self, Habitaciones_registro, hr_d)
+        self.delete_object( Habitaciones_registro, hr_d)
 
     def printList(self,list):
         for e in list.values():

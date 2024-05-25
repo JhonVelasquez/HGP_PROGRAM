@@ -53,13 +53,6 @@
          </property>
         </spacer>
        </item>
-       <item>
-        <widget class="QPushButton" name="btnHabReg">
-         <property name="text">
-          <string>Estados</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </item>
      <item>
@@ -73,14 +66,17 @@
        <property name="sizeAdjustPolicy">
         <enum>QAbstractScrollArea::AdjustToContents</enum>
        </property>
-       <property name="sortingEnabled">
+       <property name="showGrid">
         <bool>true</bool>
+       </property>
+       <property name="sortingEnabled">
+        <bool>false</bool>
        </property>
        <attribute name="horizontalHeaderCascadingSectionResizes">
         <bool>false</bool>
        </attribute>
        <attribute name="horizontalHeaderMinimumSectionSize">
-        <number>80</number>
+        <number>40</number>
        </attribute>
        <attribute name="horizontalHeaderDefaultSectionSize">
         <number>200</number>

@@ -33,6 +33,8 @@ class Habitacion_estado(Base):
     id = Column(Integer, primary_key=True)
     value = Column(String(50))
     is_in_arquiler = Column(String(10))
+    is_in_hab_reg = Column(String(10))
+    is_in_hab = Column(String(10))
     background = Column(String(20))
 
     def __str__(self):
@@ -48,7 +50,11 @@ class Habitacion(Base):
     piso = Column(Integer)
     camas = Column(String(50))
     caracteristicas = Column(String(50))
+    state = Column(Integer, ForeignKey('Habitacion_estado.id'))
     last_registers = {}
+    now_def_registers = {}
+    now_undef_registers = {}
+    fut_registers = {}
     def __str__(self):
         #return 'id:{0} - id_hab_est:{1} - nombre: {2} - descripcion: {3} - precioReferencia: {4} - piso: {5}- camas: {6}- caracteristicas: {7}'.format(self.id, str(self.id_hab_est),self.nombre,self.descripcion,self.precioReferencia,self.piso,self.camas,self.caracteristicas)
         return 'id:{0} - nombre: {1} - descripcion: {2} - precioReferencia: {3} - piso: {4}- camas: {5}- caracteristicas: {6}'.format(self.id,self.nombre,self.descripcion,self.precioReferencia,self.piso,self.camas,self.caracteristicas)
@@ -127,17 +133,49 @@ class Habitacion(Base):
            case 7:
                b = list(self.last_registers.values())
                l_b = len(b)
-               if l_b > 1:
-                return b[0:l_b-1]
+               if l_b > 0:
+                return b[0:l_b]
                else:
-                return []
+                return list()
            case 8:
-               b = list(self.last_registers.values())
+               b = list(self.now_undef_registers.values())
                l_b = len(b)
-               if l_b != 0:
-                return [b[l_b-1]]
+               if l_b > 0:
+                return b[0:l_b]
                else:
-                return []
+                return list()
+           case 9:
+               b = list(self.now_def_registers.values())
+               l_b = len(b)
+               if l_b > 0:
+                return b[0:l_b]
+               else:
+                return list()
+           case 10:
+               b = list(self.fut_registers.values())
+               l_b = len(b)
+               if l_b > 0:
+                return b[0:l_b]
+               else:
+                return list()
+                
+                """ 
+                case 7:
+                    b = list(self.last_registers.values())
+                    l_b = len(b)
+                    if l_b > 1:
+                        return b[0:l_b-1]
+                    else:
+                        return []
+                case 8:
+                    b = list(self.last_registers.values())
+                    l_b = len(b)
+                    if l_b != 0:
+                        return [b[l_b-1]]
+                    else:
+                        return []
+                """
+               
            case _:
                return "--"
     def getLastHabReg(self):
@@ -157,8 +195,10 @@ table_hab_column_names = {
     4 : "Descripcion", 
     5 : "Precio Base", 
     6 : "Caracteristicas", 
-    7 : "Estado anterior", 
-    8 : "Estado actual"
+    7 : "Reg anterior", 
+    8 : "Reg pendiente", 
+    9 : "Reg ahora", 
+    10 : "Reg futuro"
     }
 
 """ 

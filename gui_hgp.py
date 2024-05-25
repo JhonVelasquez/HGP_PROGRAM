@@ -43,6 +43,7 @@ class Window_data():
     has_combo_estados = None
     extra_combo_estados = None
     combo_estados_in_arquiler = None
+    combo_estados_in_hab_reg = None
     
     has_combos_orderby = None
 
@@ -71,7 +72,7 @@ class Window_data():
         self.page_current = page
 
 class GeneralWindow(QtWidgets.QWidget):
-    isCreated = False
+    isCreated = None
     subWindowRef = None
     data_back = None
     newCliFuncs = None
@@ -107,10 +108,12 @@ class GeneralWindow(QtWidgets.QWidget):
 
         #loading graphics
         self.updateUsingWindowData()
-
         self.context_menu = QMenu(self)
-        clearWindow = self.context_menu.addAction("Limpiar ventana")
-        clearWindow.triggered.connect(self.clearWindow)
+        self.addAction("Limpiar ventana", self.clearWindow)
+
+    def addAction(self, name, action):
+        clearWindow = self.context_menu.addAction(name)
+        clearWindow.triggered.connect(action)
 
         
     def clearWindow(self):
@@ -181,6 +184,19 @@ class GeneralWindow(QtWidgets.QWidget):
             id_sel = self.tableContent.item(r,column).text()
             return id_sel
     
+    def select_row_by_id(self, id_ref):
+        found_row = None
+        n_r = self.tableContent.rowCount()
+        id_ref_str = str(id_ref)
+        
+        for r in range(n_r):
+            id_str = self.tableContent.item(r,0).text()
+            if(id_str == id_ref_str):
+                found_row = r
+
+        if (found_row != None): self.tableContent.selectRow(found_row)
+        return 0
+    
     #If there is page_current and page_next    
     def getSizePage(self):
         return self.data_back.page_size
@@ -227,8 +243,9 @@ class GeneralWindow(QtWidgets.QWidget):
             if(self.data_back.combo_estados_in_arquiler == True):
                 if(hab_est.is_in_arquiler == "True"):
                     self.comboBoxState.addItem(hab_est.value)
-            else:
-                self.comboBoxState.addItem(hab_est.value)
+            elif(self.data_back.combo_estados_in_hab_reg == True):
+                if(hab_est.is_in_hab_reg== "True"):
+                    self.comboBoxState.addItem(hab_est.value)
 
         if(self.data_back.extra_combo_estados != None):
             self.comboBoxState.addItem(self.data_back.extra_combo_estados)
@@ -288,7 +305,7 @@ class HabWindow(GeneralWindow):
         v = self.get_element_selected_text(column=0)
         if(v != None): return v
         else: return None
-
+    
     def updateTableView(self, d_Habitaciones: dict[str, Habitacion], d_Hab_est, d_Hab_cam, d_Hab_car):
 
         #self.resetTableView()
@@ -298,6 +315,7 @@ class HabWindow(GeneralWindow):
         self.tableContent.setColumnCount(n_col)
         self.tableContent.setRowCount(n_row)
         self.tableContent.setStyleSheet("QTableWidget::item { padding-left:0px; padding-right:0px; padding-top: 5px; padding-bottom: 5px;}")
+        self.tableContent.setSortingEnabled(False)
 
         for i,key in enumerate(d_Habitaciones.keys()):
             header_item = QtWidgets.QTableWidgetItem(str(i+1))
@@ -308,9 +326,10 @@ class HabWindow(GeneralWindow):
 
         for i,key in enumerate(d_Habitaciones.keys()):
             for j,col_name in enumerate(self.table_column_names.values()):
-                var =  d_Habitaciones[key].getTableElementByPos(j, d_Hab_est, d_Hab_cam, d_Hab_car) 
+                hab_row =  d_Habitaciones[key]
+                var =  hab_row.getTableElementByPos(j, d_Hab_est, d_Hab_cam, d_Hab_car) 
                 element = None
-                if(j == 7 or j == 8): # lists of hab_reg in var
+                if(j == 7 or j == 8 or j == 9 or j == 10): # lists of hab_reg in var
                     element = QtWidgets.QTableWidgetItem()
                     self.tableContent.setItem(i, j, element)
                     #element.setTextAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -318,18 +337,35 @@ class HabWindow(GeneralWindow):
                     layout = QHBoxLayout()
                     btn = QPushButton()
                     spacer = None
-                    if(j == 7): 
-                        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+                    spacer = QSpacerItem(5, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+                    
+                    """ 
                     elif(j==8):
-                        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+                        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed) """
 
+                    if(j==9):
+                        add_hab_state = False
+                        if(len(var)==0 and hab_row.state == 1): #state value 1 is "Disponible"
+                            add_hab_state = True
+                        elif (hab_row.state == 0): #state value 1 is "Inisponible"
+                            add_hab_state = True
+
+                        if(add_hab_state == True):
+                            hr = Habitaciones_registro()
+                            hr.id = -1
+                            hr.id_hab_est = hab_row.state
+                            var.append(hr)
+                                    
                     layout.addItem(spacer)
                     for m,hab_reg in enumerate(var):
                             est = d_Hab_est[hab_reg.id_hab_est]
-                            text = str(hab_reg.id) + ": " + str(est.value)
+
+                            if(hab_reg.id != -1): text = str(hab_reg.id) + ": " + str(est.value)
+                            else: text = est.value
+
                             btn = QLabel()
                             btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                            btn.setSizePolicy(QtWidgets.QSizePolicy.Policy(QSizePolicy.Policy.Minimum), QtWidgets.QSizePolicy.Policy(QSizePolicy.Policy.Minimum))
+                            btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
                             style_str = "padding-left: 5px; padding-right: 5px; padding-top: 3px; padding-bottom: 3px; height: 40px; width: 200px;"
                             
                             if(est.background != None and est.background!=""): style_str = style_str + "background-color:"+ est.background +";"
@@ -342,18 +378,19 @@ class HabWindow(GeneralWindow):
                         #if(i==0): s =">> " +str(hab_reg.id) + ": " + str(d_Hab_est[hab_reg.id_hab_est].value)
                         #else: s = s + " > " + str(hab_reg.id) + ": " + str(d_Hab_est[hab_reg.id_hab_est].value)    
 
-                    if(j == 7): 
-                        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-                    elif(j==8):
-                        spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
 
+                    if(len(var) == 1 and j == 9):
+                        spacer = QSpacerItem(5, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+                    else:
+                        spacer = QSpacerItem(5, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+                    
                     layout.addItem(spacer)
 
                     layout.setContentsMargins(0,0,0,0)
                     layout.setSpacing(3)
                     layout.setSizeConstraint(QLayout.SizeConstraint.SetMaximumSize)
                     widget.setLayout(layout) 
-                    widget.setSizePolicy(QtWidgets.QSizePolicy.Policy(QSizePolicy.Policy.Minimum), QtWidgets.QSizePolicy.Policy(QSizePolicy.Policy.Minimum))
+                    widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
                     self.tableContent.setCellWidget(i, j, widget)
                 else:
@@ -363,9 +400,9 @@ class HabWindow(GeneralWindow):
                     self.tableContent.setItem(i, j, element)
 
         self.tableContent.resizeColumnsToContents()
-        self.tableContent.resizeRowsToContents()
-        
+        self.tableContent.resizeRowsToContents()    
         self.setTableViewPost()
+        self.tableContent.setSortingEnabled(False)    
 
 class ArqWindow(GeneralWindow):
 
@@ -792,6 +829,7 @@ class NewHabRegWindow(GeneralWindow):
         data_back.has_combo_estados = True
         data_back.extra_combo_estados = None
         data_back.combo_estados_in_arquiler = False
+        data_back.combo_estados_in_hab_reg = True
 
         super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
 
@@ -960,6 +998,11 @@ class ClientWindow(GeneralWindow):
         self.cmb_order_by_name = cmb_order_by_name
         super().__init__(data_back=data_back,data_front=data_front,*args, **kwargs)
 
+    def get_cli_id_selected(self):
+        v = self.get_element_selected_text(column=0)
+        if(v != None): return int(v)
+        else: return None
+
     def get_cli_doc_selected(self):
         v = self.get_element_selected_text(column=1)
         if(v != None): return v
@@ -1067,6 +1110,7 @@ class HabRegWindow(GeneralWindow):
         data_back.has_combo_estados = True
         data_back.extra_combo_estados = ""
         data_back.combo_estados_in_arquiler = False
+        data_back.combo_estados_in_hab_reg = True
 
         data_back.has_combos_orderby = True
         self.table_column_names = table_column_names
