@@ -20,7 +20,7 @@ class DataBase():
     #inspection = None
     
     def init_db(self):
-        self.url_db = "sqlite:///.\\db\\hgp_dev.db"
+        self.url_db = "sqlite:///.\\db\\hgp.db"
         self.engine = create_engine(self.url_db)
         #self.inspection = inspect(engine)
 
@@ -73,6 +73,13 @@ class DataBase():
                 hab.now_undef_registers =   self.get_dic_table_registro(inicio_min= None, inicio_max= now, empty_inicio= False, fin_min= None, fin_max= None, empty_fin= True, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
                 hab.fut_registers =         self.get_dic_table_registro(inicio_min= now, inicio_max= None, empty_inicio= False, fin_min= None, fin_max= None, empty_fin= None, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
                 d_hab[hab.id]=hab
+            
+                if ((hab.id_permanent_state == 0) or ((hab.id_permanent_state == 1) and (len(hab.now_def_registers)==0))):#  0 state value 1 is "Indisponible", 1 is "Disponible"
+                    hr = Habitaciones_registro()
+                    hr.id = None
+                    hr.id_hab_est = hab.id_permanent_state
+                    hab.now_def_registers[-1] = hr
+
             return d_hab
         
         except Exception as err:
@@ -424,6 +431,23 @@ class DataBase():
         except Exception as err:
             print(f"Unexpected {err=}, {type(err)=}")
             raise
+    
+    def update_hab_reg_Arquiler(self, arq: Arquiler):
+        try:
+            q_d = {}
+            q_d["id_hab_reg"] = arq.id_hab_reg
+            
+            if (len(q_d)!=0):
+                q_d["lastUpdate"] = arq.lastUpdate
+                self.open_session()
+                self.session.query(Arquiler).filter(arq.id == Arquiler.id).update(q_d)
+                self.session.commit()
+                self.close_session()
+        
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+            raise
+    
     
     def update_Arquiler(self, arq: Arquiler, arq_d: Arquiler):
         try:

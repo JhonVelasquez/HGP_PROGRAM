@@ -343,25 +343,14 @@ class HabWindow(GeneralWindow):
                     elif(j==8):
                         spacer = QSpacerItem(10, 0, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed) """
 
-                    if(j==9):
-                        add_hab_state = False
-                        if(len(var)==0 and hab_row.state == 1): #state value 1 is "Disponible"
-                            add_hab_state = True
-                        elif (hab_row.state == 0): #state value 1 is "Inisponible"
-                            add_hab_state = True
-
-                        if(add_hab_state == True):
-                            hr = Habitaciones_registro()
-                            hr.id = -1
-                            hr.id_hab_est = hab_row.state
-                            var.append(hr)
                                     
                     layout.addItem(spacer)
                     for m,hab_reg in enumerate(var):
                             est = d_Hab_est[hab_reg.id_hab_est]
 
-                            if(hab_reg.id != -1): text = str(hab_reg.id) + ": " + str(est.value)
-                            else: text = est.value
+                            text= ""
+                            if(hab_reg.id != None): text = text + str(hab_reg.id) + ": "
+                            text = text   + str(est.value)
 
                             btn = QLabel()
                             btn.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -585,13 +574,7 @@ class NewArqWindow(GeneralWindow):
         self.lineEditHabID.setText(h.id)
         self.label_camas.setText(h.getCamasString(d_Hab_cam))
         self.label_precio.setText(str(h.precioReferencia))
-
-        last_hab_reg = h.getLastHabReg()
-        if(last_hab_reg!=None):
-            est = d_Hab_est[last_hab_reg.id_hab_est]
-            self.label_estado.setText(str(est.value))
-        else:
-            self.label_estado.setText("")
+        self.label_estado.setText(h.getEstadoString(d_Hab_est))
             
     def clearWindow(self):
         self.lineEditArqID.setText("")
@@ -868,12 +851,7 @@ class NewHabRegWindow(GeneralWindow):
  
     def fillData_hab(self, h: Habitacion, d_Hab_est):
         self.lineEditHabID.setText(h.id)
-        last_hab_reg = h.getLastHabReg()
-        if(last_hab_reg!=None):
-            est = d_Hab_est[last_hab_reg.id_hab_est]
-            self.label_estado.setText(str(est.value))
-        else:
-            self.label_estado.setText("")
+        self.label_estado.setText(h.getEstadoString(d_Hab_est))
 
     def fillData_hab_reg(self, h: Habitaciones_registro, d_Hab_est):
 

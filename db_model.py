@@ -50,7 +50,7 @@ class Habitacion(Base):
     piso = Column(Integer)
     camas = Column(String(50))
     caracteristicas = Column(String(50))
-    state = Column(Integer, ForeignKey('Habitacion_estado.id'))
+    id_permanent_state = Column(Integer, ForeignKey('Habitacion_estado.id'))
     last_registers = {}
     now_def_registers = {}
     now_undef_registers = {}
@@ -134,28 +134,29 @@ class Habitacion(Base):
                b = list(self.last_registers.values())
                l_b = len(b)
                if l_b > 0:
-                return b[0:l_b]
+                return b
                else:
                 return list()
            case 8:
                b = list(self.now_undef_registers.values())
                l_b = len(b)
                if l_b > 0:
-                return b[0:l_b]
+                return b
                else:
                 return list()
            case 9:
                b = list(self.now_def_registers.values())
                l_b = len(b)
                if l_b > 0:
-                return b[0:l_b]
+                return b
                else:
                 return list()
+            
            case 10:
                b = list(self.fut_registers.values())
                l_b = len(b)
                if l_b > 0:
-                return b[0:l_b]
+                return b
                else:
                 return list()
                 
@@ -179,13 +180,20 @@ class Habitacion(Base):
            case _:
                return "--"
     def getLastHabReg(self):
-            b = list(self.last_registers.values())
-            l_b = len(b)
-            if l_b != 0:
-                return b[l_b-1]
-            else:
-                return  None
+        b = list(self.last_registers.values())
+        l_b = len(b)
+        if l_b != 0:
+            return b[l_b-1]
+        else:
+            return  None
+    def getEstadoString(self, d_Hab_est):
+        txt = ""
+        for n,reg in enumerate(self.now_def_registers.values()):
+            est = d_Hab_est[reg.id_hab_est]
+            if(n == 0): txt = est.value
+            else: txt = txt + ", "+ est.value
 
+        return txt
                    
 table_hab_column_names = { 
     0 : "ID", 

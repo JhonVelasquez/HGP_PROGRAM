@@ -104,6 +104,7 @@ class Controller():
         self.mainWindow.btnAddRegistro.clicked.connect(self.callback_habRegW_openNewHabRegW)
 
         self.mainWindow.btnTest.clicked.connect(self.callback_test)
+        self.mainWindow.btnTest.setVisible(False)
 
         self.mainWindow.show_visual()
         self.mainWindow.showMaximized()
@@ -339,7 +340,7 @@ class Controller():
         arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "search")
         if(arq_form != None):
             id_arq_form = arq_form.id
-            self.f_newArq_search_fill(self, id_arq_form)
+            self.f_newArq_search_fill(id_arq_form)
         else:
             return 0
 
@@ -386,6 +387,7 @@ class Controller():
                         if(new_hab_reg!=None):
                             if(new_hab_reg.id!=None):
                                 arq_form.id_hab_reg = new_hab_reg.id
+                                db_hgp.update_hab_reg_Arquiler(arq_form)
                                 self.newArqWindow.fillData_arq_habReg(new_hab_reg, d_Hab_est=self.d_Hab_est)
                     else:
                         self.f_habReg_update(hab_reg_form= arq_form.hab_reg, window= None, show_end_habRegW= show_end_habRegW, show_end_habW = False)
@@ -395,10 +397,10 @@ class Controller():
                     if(err == 0):
                         arq_form.lastUpdate = datetime.now()
                         db_hgp.update_Arquiler(arq_form,arq_db)
-                        self.f_newArq_search_fill( arq_db.id)
+                        self.f_newArq_search_fill(arq_form.id)
                         self.newArqWindow.setInf_arq("U:Listo")
-                        if(show_end_arqW): self.arqW_show_update(foc= False, id_select= arq_form.id)
-                        if(show_end_habW):self.habW_show_update(foc= False, id_select= arq_form.id_hab)
+                        if(show_end_arqW or (show_end_arqW == False and self.arqWindow.isCreated == True)): self.arqW_show_update(foc= False, id_select= arq_form.id)
+                        if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)):self.habW_show_update(foc= False, id_select= arq_form.id_hab)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
@@ -453,9 +455,10 @@ class Controller():
                         arq_form.lastUpdate = datetime.now()
                         created_arq = db_hgp.create_Arquiler(arq_form)
                         self.newArqWindow.lineEditArqID.setText(str(created_arq.id))
+                        self.newArqW_f_fill_hab_from_id(arq_form.id_hab)
                         self.newArqWindow.setInf_arq("C:Listo")
-                        if(show_end_arqW): self.arqW_show_update(foc= False, id_select= created_arq.id)
-                        if(show_end_habW): self.habW_show_update(foc= False, id_select= created_arq.id_hab)
+                        if(show_end_arqW or (show_end_arqW == False and self.arqWindow.isCreated == True)): self.arqW_show_update(foc= False, id_select= created_arq.id)
+                        if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)): self.habW_show_update(foc= False, id_select= created_arq.id_hab)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se creó o intente de nuevo.\n\n"+str(err)).exec()
@@ -480,11 +483,13 @@ class Controller():
                 try:
                         db_hgp.delete_Arquiler(arq_db)
                         self.newArqWindow.setInf_arq("C:Listo")
-                        if(show_end_arqW): self.arqW_show_update(foc= False)
+                        if(show_end_arqW or (show_end_arqW == False and self.arqWindow.isCreated == True)): self.arqW_show_update(foc= False)
                         if(arq_db.hab_reg != None and arq_db.hab_reg.id != None):
                             db_hgp.delete_Hab_Reg(arq_db.hab_reg)
-                            if(show_end_habRegW): self.habRegW_show_update(foc= False, reset_back=True)
-                            if(show_end_habW): self.habW_show_update(foc= False)
+                            self.newArqW_f_fill_hab_from_id(arq_form.id_hab)
+                            self.callback_newArqW_arq_create_prepare()
+                            if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True)
+                            if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)): self.habW_show_update(foc= False)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se eliminó o intente de nuevo.\n\n"+str(err)).exec()
@@ -517,10 +522,14 @@ class Controller():
     def callback_newHabRegW_update(self):
         hab_reg_form = self.newHabRegWindow.getHabRegFromForm(self.d_Hab_est, "update")
         self.f_habReg_update(hab_reg_form = hab_reg_form, window = self.newHabRegWindow, show_end_habRegW= True, show_end_habW= True)
+        if(hab_reg_form != None):
+            self.newHabRegW_f_fill_hab_from_id(hab_reg_form.id_hab)
 
     def callback_newHabRegW_create(self):
         hab_reg_form = self.newHabRegWindow.getHabRegFromForm(self.d_Hab_est, "create")
         self.f_habReg_create(hab_reg_form = hab_reg_form, window = self.newHabRegWindow, show_end_habRegW= True, show_end_habW= True)
+        if(hab_reg_form != None):
+            self.newHabRegW_f_fill_hab_from_id(hab_reg_form.id_hab)
         
     def callback_newHabRegW_cancel(self):
         self.newHabRegWindow.close()
@@ -536,12 +545,12 @@ class Controller():
             #verifying reg
             hab_reg_db = db_hgp.get_hab_reg_from_id(id_hab_reg_form)
             if (hab_reg_db!=None):
-                db_hgp.delete_Hab_Reg(hab_reg_form)
-                self.newHabRegWindow.setInf_hab_reg("C:Listo")
-                if(show_end_habRegW): self.habRegW_show_update(foc= False, reset_back=True)
-                if(show_end_habW): self.habW_show_update(foc= False)
                 try:
-                    a = 2
+                    db_hgp.delete_Hab_Reg(hab_reg_form)
+                    self.newHabRegWindow.setInf_hab_reg("C:Listo")
+                    self.newHabRegW_f_fill_hab_from_id(hab_reg_form.id_hab)
+                    if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True)
+                    if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)): self.habW_show_update(foc= False)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se eliminó o intente de nuevo.\n\n"+str(err)).exec()
                     self.newHabRegWindow.setInf_hab_reg("N:Intente de nuevo")
@@ -771,7 +780,7 @@ class Controller():
                     client.lastUpdate = datetime.now()
                     created_cli = db_hgp.create_Client(client)
                     widg.setInf_cli("N:Listo")
-                    if(show_end_cliW): self.cliW_show_update(foc= False, reset_back= True, id_select= created_cli.id)
+                    if(show_end_cliW or (show_end_cliW == False and self.cliWindow.isCreated == True)): self.cliW_show_update(foc= False, reset_back= True, id_select= created_cli.id)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se creó o intente de nuevo.\n\n"+str(err)).exec()
                     widg.setInf_cli("N:Intente de nuevo")
@@ -790,7 +799,7 @@ class Controller():
                 try:
                     db_hgp.delete_Client(cl_db)
                     widg.setInf_cli("N:Eliminado")
-                    if(show_end_cliW): self.cliW_show_update(foc= False, reset_back= True)
+                    if(show_end_cliW or (show_end_cliW == False and self.cliWindow.isCreated == True)): self.cliW_show_update(foc= False, reset_back= True)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
                     widg.setInf_cli("N:Intente de nuevo")
@@ -807,7 +816,7 @@ class Controller():
                     client.lastUpdate = datetime.now()
                     db_hgp.update_Client(client,cl_db)
                     widg.setInf_cli("N:Listo")
-                    if(show_end_cliW): self.cliW_show_update(foc= False, reset_back= True, id_select= cl_db.id)
+                    if(show_end_cliW or (show_end_cliW == False and self.cliWindow.isCreated == True)): self.cliW_show_update(foc= False, reset_back= True, id_select= cl_db.id)
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
                     widg.setInf_cli("N:Intente de nuevo")
@@ -1030,8 +1039,8 @@ class Controller():
                         hab_reg_form.lastUpdate = datetime.now()
                         db_hgp.update_Hab_Reg(hab_reg_form,hab_reg_db)
                         if(window != None): window.setInf_hab_reg("U:Listo")
-                        if(show_end_habRegW): self.habRegW_show_update(foc= False, reset_back=True, id_select= hab_reg_form.id)
-                        if(show_end_habW): self.habW_show_update(foc= False, id_select= hab_reg_form.id_hab)
+                        if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True, id_select= hab_reg_form.id)
+                        if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)): self.habW_show_update(foc= False, id_select= hab_reg_form.id_hab)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se actualizó o intente de nuevo.\n\n"+str(err)).exec()
@@ -1063,8 +1072,8 @@ class Controller():
                             window.lineEditHabRegID.setText(str(new_hab_reg.id))
                             window.setInf_hab_reg("C:Listo")
                             
-                        if(show_end_habRegW): self.habRegW_show_update(foc= False, reset_back=True, id_select= new_hab_reg.id)
-                        if(show_end_habW): self.habW_show_update(foc= False, id_select= new_hab_reg.id_hab)
+                        if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True, id_select= new_hab_reg.id)
+                        if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)): self.habW_show_update(foc= False, id_select= new_hab_reg.id_hab)
 
                 except Exception as err:
                     CustomDialog("Error","Hubo un problema. Verifique si se creó o intente de nuevo.\n\n"+str(err)).exec()
