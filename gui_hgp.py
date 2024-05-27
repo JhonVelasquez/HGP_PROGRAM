@@ -288,10 +288,10 @@ class MainWindow(GeneralWindow):
         data_back.title_window = "HGP"
         data_back.has_table = True
         data_back.has_pages = False
-        super().__init__(data_back=data_back,*args, **kwargs)    
+        super().__init__(data_back=data_back)    
     
 class HabWindow(GeneralWindow):
-
+    id = 0
     def __init__(self, table_column_names, *args, **kwargs):
         data_back = Window_data()
         data_back.path_gui = './ui/hab.ui'
@@ -394,11 +394,12 @@ class HabWindow(GeneralWindow):
         self.tableContent.setSortingEnabled(False)    
 
 class ArqWindow(GeneralWindow):
+    id = 1
 
     def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, cmb_order_by_name: None, *args, **kwargs):
         if(data_back == None): data_back = Window_data()
         data_back.path_gui = './ui/arq.ui'
-        data_back.title_window = "Arquileres"
+        data_back.title_window = "Alquileres"
         data_back.has_table = True
         data_back.has_pages = True
         data_back.page_size = 15
@@ -549,11 +550,12 @@ class ArqWindow(GeneralWindow):
         self.setTableViewPost()
 
 class NewArqWindow(GeneralWindow):
+    id = 5
 
     def __init__(self, d_Hab_est, *args, **kwargs):
         data_back = Window_data()
         data_back.path_gui = './ui/new_arq.ui'
-        data_back.title_window = "Nuevo arquiler"
+        data_back.title_window = "Nuevo/modificar alquiler"
         data_back.has_table = False
         data_back.has_pages = False
         data_back.has_client_section = True
@@ -566,7 +568,7 @@ class NewArqWindow(GeneralWindow):
         super().__init__(data_back=data_back,d_Hab_est=d_Hab_est,*args, **kwargs)
 
         self.set_time_checking_now()
-        self.set_time_checkout_now()
+        self.clear_time_checkout_now()
         self.timeEditChecking.setCalendarPopup(True)
         self.timeEditCheckout.setCalendarPopup(True)
 
@@ -800,11 +802,12 @@ class NewArqWindow(GeneralWindow):
         return self.labelInfHab.setText(mssg)
     
 class NewHabRegWindow(GeneralWindow):
+    id = 6
 
     def __init__(self, d_Hab_est, *args, **kwargs):
         data_back = Window_data()
         data_back.path_gui = './ui/new_hab_reg.ui'
-        data_back.title_window = "Nuevo registro de estado"
+        data_back.title_window = "Nuevo/modificar estado"
         data_back.has_table = False
         data_back.has_pages = False
         data_back.has_client_section = False
@@ -910,7 +913,7 @@ class NewHabRegWindow(GeneralWindow):
                 hr.id = None
             else:
                 err=err+1
-                CustomDialog("Error","Registro de estado ID debe estar vacio para crear y los demas no.").exec()
+                CustomDialog("Error","Estados ID debe estar vacio para crear y los demas no.").exec()
             
         elif(type_op == "update"):
             if((self.lineEditHabRegID.text() != "") and self.isDataInFormValid()):
@@ -924,14 +927,14 @@ class NewHabRegWindow(GeneralWindow):
                 hr.id = int(self.lineEditHabRegID.text())
             else:
                 err=err+1
-                CustomDialog("Error","Registro de estado ID no debe estar vacio para buscar.").exec()
+                CustomDialog("Error","Estados ID no debe estar vacio para buscar.").exec()
 
         elif(type_op == "delete"):
             if(self.lineEditHabRegID.text() != ""):
                 hr.id = int(self.lineEditHabRegID.text())
             else:
                 err=err+1
-                CustomDialog("Error","Registro de estado ID no debe estar vacio para eliminar.").exec()
+                CustomDialog("Error","Estados ID no debe estar vacio para eliminar.").exec()
 
         if(err!=0):
             hr = None
@@ -958,6 +961,7 @@ class NewHabRegWindow(GeneralWindow):
         return hr
     
 class ClientWindow(GeneralWindow):
+    id = 2
 
     def __init__(self, data_front: Window_data, data_back: Window_data, table_column_names, cmb_order_by_name: None, *args, **kwargs):
         if(data_back == None): data_back = Window_data()
@@ -1075,11 +1079,12 @@ class ClientWindow(GeneralWindow):
         self.setTableViewPost()
 
 class HabRegWindow(GeneralWindow):
+    id = 3
 
     def __init__(self, data_front: Window_data, data_back: Window_data, d_Hab_est, table_column_names, cmb_order_by_name: None, *args, **kwargs):
         if(data_back==None): data_back = Window_data()
         data_back.path_gui = './ui/hab_reg.ui'
-        data_back.title_window = "Registros de habitación"
+        data_back.title_window = "Estados"
         data_back.has_table = True
         data_back.has_pages = True
         data_back.page_size = 10
@@ -1190,11 +1195,12 @@ class HabRegWindow(GeneralWindow):
         self.setTableViewPost()
 
 class NewClientWindow(GeneralWindow):
+    id = 4
     
     def __init__(self, *args, **kwargs):
         data_back = Window_data()
         data_back.path_gui = './ui/new_client.ui'
-        data_back.title_window = "Nuevo cliente"
+        data_back.title_window = "Nuevo/modificar cliente"
         data_back.has_table = False
         data_back.has_pages = False
         data_back.has_client_section = True

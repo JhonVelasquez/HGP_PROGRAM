@@ -203,10 +203,10 @@ table_hab_column_names = {
     4 : "Descripcion", 
     5 : "Precio Base", 
     6 : "Caracteristicas", 
-    7 : "Reg anterior", 
-    8 : "Reg pendiente", 
-    9 : "Reg ahora", 
-    10 : "Reg futuro"
+    7 : "Reg. pasado", 
+    8 : "Reg. pendiente", 
+    9 : "Reg. ahora", 
+    10 : "Reg. futuro"
     }
 
 """ 
@@ -275,7 +275,7 @@ table_hab_reg_column_names = {
     2 : "F/h Fin", 
     3 : "Habitacion", 
     4 : "Estado", 
-    5 : "Ultimo cambio"
+    5 : "Último cambio"
     }
 
 hab_reg_cmb_order_by_name = table_hab_reg_column_names
@@ -334,7 +334,7 @@ class Cliente(Base):
                    
 table_cli_column_names = { 
     0 : "ID", 
-    1 : "nDocumento", 
+    1 : "Documento", 
     2 : "Nombre", 
     3 : "Apellido", 
     4 : "Datos adicionales", 
@@ -422,7 +422,7 @@ table_arq_column_names = {
     1 : "Habitacion",
     2 : "Cliente",
     3 : "Empleado",
-    4 : "Hab_reg",
+    4 : "Estados ID",
     5 : "Estado",
     6 : "F/h checking",
     7 : "F/h checkout",
@@ -437,7 +437,7 @@ arq_cmb_order_by_name = {
     3 : "Cli-nombre", 
     4 : "Cli-apellido", 
     5 : "Empleado", 
-    6 : "Hab_reg", 
+    6 : "Estados ID", 
     7 : "Estado", 
     8 : "F/h checking",
     9 : "F/h checkout", 
