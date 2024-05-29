@@ -20,7 +20,8 @@ class DataBase():
     #inspection = None
     
     def init_db(self):
-        self.url_db = "sqlite:///.\\db\\hgp.db"
+        #self.url_db = "sqlite:///.\\db\\hgp.db"
+        self.url_db = "mysql+pymysql://root:R0ck0!@localhost:3306/hgp_dev"
         self.engine = create_engine(self.url_db)
         #self.inspection = inspect(engine)
 
