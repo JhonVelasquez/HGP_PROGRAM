@@ -140,6 +140,7 @@ class Controller():
 
         self.mainWindow.show_visual()
         self.mainWindow.showMaximized()
+        self.mainWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.mainWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
         
 
@@ -156,6 +157,7 @@ class Controller():
         self.habWindow = HabWindow(table_column_names= table_hab_column_names)
         self.habWindow.btnUpdate.clicked.connect(self.callback_habW_update)
         self.habWindow.addAction("Actualizar", self.callback_habW_update)
+        self.habWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.habWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
     def arqW_init(self, data_front = None, data_back = None):
@@ -167,6 +169,7 @@ class Controller():
         self.arqWindow.btnNext.clicked.connect(self.callback_arqW_next)
 
         self.arqWindow.addAction("Actualizar", self.callback_arqW_update)
+        self.arqWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.arqWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
         self.arqWindow.btnUpdateTimeChecking.clicked.connect(self.callback_habRegW_update_time_checking)     
@@ -180,6 +183,7 @@ class Controller():
         self.cliWindow.btnPrev.clicked.connect(self.callback_cliW_prev)
         self.cliWindow.btnNext.clicked.connect(self.callback_cliW_next)
         self.cliWindow.addAction("Actualizar", self.callback_cliW_update)
+        self.cliWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.cliWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
     def habRegW_init(self, data_front = None, data_back = None):
@@ -193,6 +197,7 @@ class Controller():
         self.habRegWindow.btnUpdateTimeStart.clicked.connect(self.callback_habRegW_update_time_start)     
         self.habRegWindow.btnClearTimeStart.clicked.connect(self.callback_habRegW_clear_time_start)
         self.habRegWindow.addAction("Actualizar", self.callback_habRegW_update)
+        self.habRegWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.habRegWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
     def newCliW_init(self):
@@ -202,6 +207,7 @@ class Controller():
         self.newCliWindow.btnCreateClient.clicked.connect(self.callback_newCliW_create)
         self.newCliWindow.btnDeleteClient.clicked.connect(self.callback_newCliW_delete)
         self.newCliWindow.btnCancelClient.clicked.connect(self.callback_newCliW_cancel)
+        self.newCliWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.newCliWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
     def newArqW_init(self):
@@ -224,6 +230,7 @@ class Controller():
         self.newArqWindow.btnUpdateTimeCheckout.clicked.connect(self.callback_newArqW_update_time_checkout)
         self.newArqWindow.btnClearTimeChecking.clicked.connect(self.callback_newArqW_clear_time_checking)
         self.newArqWindow.btnClearTimeCheckout.clicked.connect(self.callback_newArqW_clear_time_checkout)
+        self.newArqWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.newArqWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
     def newHabRegW_init(self):
@@ -241,9 +248,13 @@ class Controller():
         self.newHabRegWindow.btnUpdateTimeHabRegEnd.clicked.connect(self.callback_newHabRegW_update_time_end)
         self.newHabRegWindow.btnClearTimeHabRegStart.clicked.connect(self.callback_newHabRegW_clear_time_start)
         self.newHabRegWindow.btnClearTimeHabRegEnd.clicked.connect(self.callback_newHabRegW_clear_time_end)
+        self.newHabRegWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.newHabRegWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
     #CALLBACKS - MAIN WINDOW 
+
+    def call_update_all_sub_windows(self):
+        self.mainWindow.update_all_opened_windows()
 
     def call_close_all_sub_windows(self):
         self.mainWindow.mdiAreaMain.closeAllSubWindows()
