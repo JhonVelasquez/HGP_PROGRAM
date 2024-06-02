@@ -22,10 +22,11 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtWidgets import *
 from db_model import *
-
+import hashlib
 
 
 class Controller():
+    loginWindow = None
     mainWindow = None
     dbWindow = None
 
@@ -40,7 +41,8 @@ class Controller():
 
     testWindow = None
 
-    currentEmpleadoID = None
+    currentEmpleado = None
+
     db_hgp = None
 
     #Almost fixed
@@ -102,20 +104,27 @@ class Controller():
     def init_visual_main(self):
         app = QtWidgets.QApplication(sys.argv) 
         #app.setStyleSheet(dark_theme)       
-        self.mainWindow = MainWindowMoid(self)
-        self.dbWindow = DatabaseWindow()
         
         #qdarktheme.setup_theme()
         # Customize accent color.
         # qdarktheme.setup_theme(custom_colors={"primary": "#D0BCFF"})
-        self.mainWindow.mdiAreaMain.cascadeSubWindows()
         #self.mainWindow.mdiAreaMain.tileSubWindows()
 
-        self.currentEmpleadoID = 5
-
         self.init_db()
-        self.dbW_init()   
 
+        self.loginW_init()
+        self.mainW_init()
+
+        self.loginWindow.show_visual()
+
+        sys.exit(app.exec())
+
+    def loginW_init(self):
+        self.loginWindow = LoginWindow()
+        self.loginWindow.btnLogin.clicked.connect(self.callback_loginW_login)
+
+    def mainW_init(self):
+        self.dbW_init()   
         self.habW_init()   
         self.cliW_init()
         self.habRegW_init()
@@ -124,12 +133,18 @@ class Controller():
         self.newArqW_init()
         self.newHabRegW_init()
 
+
+        self.mainWindow = MainWindowMoid(self)
+
+        self.mainWindow.mdiAreaMain.cascadeSubWindows()
+
         self.mainWindow.btnHab.clicked.connect(self.callback_mainW_openHabW)
         self.mainWindow.btnHabReg.clicked.connect(self.callback_habW_openHabRegW)
         self.mainWindow.btnArq.clicked.connect(self.callback_mainW_openArqW)
         self.mainWindow.btnClient.clicked.connect(self.callback_mainW_openClientW)
         self.mainWindow.btnSunat.clicked.connect(self.callback_mainW_sunat)
         self.mainWindow.btnDB.clicked.connect(self.callback_mainW_db)
+        self.mainWindow.btnCloseSession.clicked.connect(self.callback_mainW_closeSession)
 
         self.mainWindow.btnAddArquiler.clicked.connect(self.callback_arqW_openNewArqW)
         self.mainWindow.btnAddClient.clicked.connect(self.callback_cliW_openNewCliW)
@@ -137,14 +152,8 @@ class Controller():
 
         self.mainWindow.btnTest.clicked.connect(self.callback_test)
         self.mainWindow.btnTest.setVisible(False)
-
-        self.mainWindow.show_visual()
-        self.mainWindow.showMaximized()
         self.mainWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.mainWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
-        
-
-        sys.exit(app.exec())
 
     def dbW_init(self):
         self.dbWindow = DatabaseWindow()
@@ -152,6 +161,7 @@ class Controller():
         self.dbWindow.btnSavePath.clicked.connect(self.callback_dbW_save)
         self.dbWindow.btnLoadPath.clicked.connect(self.callback_dbW_load)
         self.dbWindow.btnMigrate.clicked.connect(self.callback_dbW_migrate)
+        self.dbWindow.btnHash.clicked.connect(self.callback_dbW_hash)
 
     def habW_init(self):
         self.habWindow = HabWindow(table_column_names= table_hab_column_names)
@@ -251,7 +261,33 @@ class Controller():
         self.newHabRegWindow.addAction("Actualizar todo", self.call_update_all_sub_windows)
         self.newHabRegWindow.addAction("Cerrar todo", self.call_close_all_sub_windows)
 
+
+    #CALLBACKS - LOGIN WINDOW 
+    def callback_loginW_login(self):
+        username = self.loginWindow.getUsername()
+        password = self.loginWindow.getPasword()
+        
+        hexdigest = getHashFromText(password)
+
+        emp =self.db_hgp.get_emp_from_username(username= username)
+        
+        if(emp!=None and emp.contrasena==hexdigest):
+            self.loginWindow.hide_visual()
+            self.mainWindow.show_visual()
+            self.mainWindow.setInf("Usuario actual: " + str(emp.username))
+            self.currentEmpleado = emp
+            self.loginWindow.clearWindow()
+        else:
+            CustomDialog("Error","Credenciales incorrectos.").exec()
+
     #CALLBACKS - MAIN WINDOW 
+
+
+    def callback_mainW_closeSession(self):
+        self.mainWindow.hide_visual()
+        self.dbWindow.hide_visual()
+        self.loginWindow.show_visual()
+        self.mainWindow.setInf("")
 
     def call_update_all_sub_windows(self):
         self.mainWindow.update_all_opened_windows()
@@ -300,7 +336,12 @@ class Controller():
         mssg_f, mssg_t = migrar_db(source, destination)
         self.dbWindow.addToInf(mssg_f)
         self.dbWindow.addToInf(mssg_t)
-        
+    
+    def callback_dbW_hash(self):
+        word = str(self.dbWindow.getWordToHash())
+        hexdigest = getHashFromText(word)
+        self.dbWindow.setInf(hexdigest)
+
     def callback_dbW_ping(self):
         
         """         
@@ -444,7 +485,7 @@ class Controller():
         self.newArqW_f_fill_hab_from_id(id_hab)
 
     def callback_newArqW_arq_search(self):
-        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "search")
+        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleado.id, "search")
         if(arq_form != None):
             id_arq_form = arq_form.id
             self.f_newArq_search_fill(id_arq_form)
@@ -458,7 +499,7 @@ class Controller():
 
         err = 0
         arq_form = None
-        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "update")
+        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleado.id, "update")
         if(arq_form != None):
             id_arq_form = arq_form.id
             
@@ -497,9 +538,12 @@ class Controller():
                                 self. db_hgp.update_hab_reg_Arquiler(arq_form)
                                 self.newArqWindow.fillData_arq_habReg(new_hab_reg, d_Hab_est=self.d_Hab_est)
                     else:
+                    #If there is Hab_reg, then verify and update
+                        arq_form.hab_reg.id = arq_db.id_hab_reg
                         self.f_habReg_update(hab_reg_form= arq_form.hab_reg, window= None, show_end_habRegW= show_end_habRegW, show_end_habW = False)
 
-                    #If there is Hab_reg, then verify and update
+
+
 
                     if(err == 0):
                         arq_form.lastUpdate = datetime.now()
@@ -524,7 +568,7 @@ class Controller():
         show_end_habW = True
 
         err = 0
-        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "create")
+        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleado.id, "create")
         if(arq_form != None):
             id_arq_form = arq_form.id
             
@@ -582,7 +626,7 @@ class Controller():
         show_end_arqW = False
         show_end_habW = True
 
-        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "delete")
+        arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleado.id, "delete")
         if(arq_form != None):
             id_arq_form = arq_form.id
             arq_db = self. db_hgp.get_arq_by_id(id_arq_form)
@@ -769,13 +813,13 @@ class Controller():
         fecha_checking = None
         order_by = None
 
-        if(wd.id_arq != None and wd.id_arq.isnumeric()): id_arq = int(wd.id_arq)
+        if(wd.id_arq != None and wd.id_arq.isnumeric()): id_arq = string_to_int(wd.id_arq)
         if(wd.id_hab != None): id_hab = wd.id_hab  
         if(wd.document != None): document = wd.document  
         if(wd.name != None): name = wd.name  
         if(wd.surname != None): surname = wd.surname  
-        if(wd.id_hab_reg != None and wd.id_hab_reg.isnumeric()): id_hab_reg = int(wd.id_hab_reg)
-        if(wd.id_hab_est != None and wd.id_hab_est.isnumeric()): id_hab_est = int(wd.id_hab_est)
+        if(wd.id_hab_reg != None and wd.id_hab_reg.isnumeric()): id_hab_reg = string_to_int(wd.id_hab_reg)
+        if(wd.id_hab_est != None and wd.id_hab_est.isnumeric()): id_hab_est = string_to_int(wd.id_hab_est)
         
         if(wd.hab_est != None): 
             hab_est_value = wd.hab_est
@@ -849,7 +893,7 @@ class Controller():
         celular = None
         order_by = None
 
-        if(wd.id_cli != None and wd.id_cli.isnumeric()): id_cli = int(wd.id_cli)
+        if(wd.id_cli != None and wd.id_cli.isnumeric()): id_cli = string_to_int(wd.id_cli)
         if(wd.document != None): nDocumento = wd.document
         if(wd.name != None): nombre = wd.name
         if(wd.surname != None): apellido = wd.surname     
@@ -1019,7 +1063,7 @@ class Controller():
         id_hab_est = None
         order_by = None
 
-        if(wd.id_hab_reg != None and wd.id_hab_reg.isnumeric()): id_hab_reg = int(wd.id_hab_reg)
+        if(wd.id_hab_reg != None and wd.id_hab_reg.isnumeric()): id_hab_reg = string_to_int(wd.id_hab_reg)
 
         if(wd.fecha_inicio != None): fecha_inicio = wd.fecha_inicio.toPyDateTime()
 

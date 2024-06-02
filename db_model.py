@@ -188,10 +188,24 @@ class Habitacion(Base):
             return  None
     def getEstadoString(self, d_Hab_est):
         txt = ""
+
+        txt = txt + "PEND: "
+
+        for n,reg in enumerate(self.now_undef_registers.values()):
+            est = d_Hab_est[reg.id_hab_est]
+            if(n == 0):
+                txt = txt + est.value
+            else:
+                txt = txt + ", "+ est.value
+
+        txt = txt + " // AHOR:"
+        
         for n,reg in enumerate(self.now_def_registers.values()):
             est = d_Hab_est[reg.id_hab_est]
-            if(n == 0): txt = est.value
-            else: txt = txt + ", "+ est.value
+            if(n == 0):
+                txt = txt + est.value
+            else:
+                txt = txt + ", "+ est.value
 
         return txt
                    
@@ -294,7 +308,8 @@ class Empleado(Base):
     id = Column(Integer, primary_key=True)
     nombre = Column(String(20))
     apellido = Column(String(20))
-    contrasena = Column(String(20))
+    contrasena = Column(String(150))
+    username = Column(String(20))
     def __str__(self):
         return 'id:{0} - nombre: {1} - apellido: {2} - contrasena: {3}'.format(self.id,self.nombre,self.apellido,self.contrasena)
 
@@ -370,7 +385,7 @@ class Arquiler(Base):
         return 'id:{0} - id_hab: {1} - id_cli: {2} - id_emp: {3} - id_hab_reg: {4} - precioReal: {5} - deuda: {6} - fechaHoraChecking: {7} - fechaHoraCheckout: {8} - lastUpdate: {9} - cliente: {10} - hab_est: {11} '.format(self.id,self.id_hab,self.id_cli,self.id_hab_est,self.id_emp,self.precioReal,self.deuda,self.fechaHoraChecking,self.fechaHoraCheckout,self.lastUpdate, self.cli, self.hab_est)
 
     def getEmpleadoString(self, d_Empleado):
-        return d_Empleado[self.id_emp].nombre
+        return d_Empleado[self.id_emp].username
 
     def getTableElementByPos(self, pos, d_Empleado):
        match pos:

@@ -19,6 +19,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from urllib.parse import urlparse, urlunparse
 from sqlalchemy import text
+import hashlib
 
 class DataBase():
     url_db = None
@@ -37,6 +38,40 @@ class DataBase():
     def close_session(self):
         self.session.close_all()
         self.session = None     
+
+    def get_dic_table_empleado(self,id_emp = None, username = None, order_by= None, n_last = None):
+        try:
+                
+            self.open_session()
+            result_query = self.session.query(Empleado)
+
+            if(id_emp != None):
+                result_query = result_query.filter( id_emp == Empleado.id)
+
+            if(username != None):
+                result_query = result_query.filter( username == Empleado.username)
+
+            if(order_by is not None):
+                result_query = result_query.order_by(order_by)
+            else:
+                result_query = result_query.order_by(Empleado.id.asc())
+
+            if(n_last != None):
+                result_fetch = result_query.limit(n_last).all()
+            else:
+                result_fetch = result_query.all()
+
+            self.close_session()
+
+            d={}
+            for r in result_fetch:
+                d[r.id]=r
+
+            return d
+        
+        except Exception as err:
+            print(f"Unexpected {err=}, {type(err)=}")
+            return {}
 
     def get_dic_table_habitacion(self, id_hab = None, asc_id_hab = True, asc_piso = True, asc_precioReferencia = False):
         count_filter=0
@@ -215,59 +250,6 @@ class DataBase():
         except Exception as err:
             print(f"Unexpected {err=}, {type(err)=}")
             return {}
-        
-    def get_dic_table_registro2(self,id_hab_reg = None, id_hab_est = None, id_hab = None, n_last = None, dateInicio:datetime = None, page_size = None, page_current = None, maximum_date_inicio:datetime = None, order_by = None, inverted = False):
-        try:
-            self.open_session()
-            result_query = self.session.query(Habitaciones_registro)
-
-            if(id_hab_reg != None):
-                result_query = result_query.filter( id_hab_reg == Habitaciones_registro.id)
-
-            if(id_hab != None):
-                result_query = result_query.filter( id_hab == Habitaciones_registro.id_hab)
-
-            if(id_hab_est != None):
-                result_query = result_query.filter( id_hab_est == Habitaciones_registro.id_hab_est)
-
-            if(dateInicio != None):
-                dt_t_min = datetime(year=dateInicio.year, month=dateInicio.month, day=dateInicio.day, hour=0, minute=0, second=0, microsecond=0)
-                dt_t_max = dt_t_min + timedelta(days=1)
-
-                result_query = result_query.filter( and_(dt_t_min <= Habitaciones_registro.fechaHoraInicio, dt_t_max > Habitaciones_registro.fechaHoraInicio))
-
-            if(maximum_date_inicio != None):
-                result_query = result_query.filter(Habitaciones_registro.fechaHoraInicio < maximum_date_inicio)
-  
-            
-            if(order_by is not None):
-                result_query = result_query.order_by(order_by)
-            else:
-                result_query = result_query.order_by(Habitaciones_registro.lastUpdate.desc())
-
-            if(page_current != None and page_size != None):
-                result_query = result_query.offset(page_size*(page_current-1))
-                result_fetch = result_query.limit(page_size).all()
-            else:
-                if(n_last != None):
-                    result_fetch = result_query.limit(n_last).all()
-                else:
-                    result_fetch = result_query.all()
-
-            self.close_session()
-
-            res = result_fetch
-            if(inverted): res.reverse()
-
-            d={}
-            for r in res:
-                d[r.id]=r
-
-            return d
-        
-        except Exception as err:
-            print(f"Unexpected {err=}, {type(err)=}")
-            return {}
            
     def get_dic_table_registro(self,id_hab_reg = None, id_hab_est = None, id_hab = None, n_last = None, dateInicio:datetime = None, page_size = None, page_current = None, inicio_min:datetime = None, inicio_max:datetime = None, empty_inicio:bool = None, fin_min:datetime = None, fin_max:datetime = None, empty_fin:bool = None, order_by = None, inverted = False):
         try:
@@ -355,6 +337,15 @@ class DataBase():
             print(f"Unexpected {err=}, {type(err)=}")
             return {}
             
+    def get_emp_from_username(self, username: str):
+        var = self.get_dic_table_empleado(username= username)
+        hr = list(var.values())
+        if (len(hr)==0):
+            return None
+        else:
+            return hr[0]
+
+
     def get_hab_reg_from_id(self,id):
         var = self.get_dic_table_registro(id_hab_reg=id)
         hr = list(var.values())
@@ -642,3 +633,11 @@ def write_db_file(content: str):
     file_path = 'db_address.txt'
     with open( file_path,'w') as data:  
         data.write(content)   
+
+def getHashFromText(text: str):
+    e_8 = text.encode('utf-8')
+    h_8 = hashlib.sha3_512()
+    h_8.update(e_8)
+    hexdigest = (h_8.hexdigest())
+    return hexdigest
+    

@@ -171,6 +171,9 @@ class GeneralWindow(QtWidgets.QWidget):
         #self.raise_()
         #self.blockSignals(False)
 
+    def hide_visual(self, focus = True):
+        self.hide()
+
     def resetTableView(self):
         self.tableContent.reset()
         self.tableContent.setSortingEnabled(False)
@@ -290,8 +293,16 @@ class MainWindow(GeneralWindow):
         data_back.title_window = "HGP"
         data_back.has_table = True
         data_back.has_pages = False
-        super().__init__(data_back=data_back)    
-    
+        super().__init__(data_back=data_back)
+
+    def setInf(self, inf: str):
+        self.lblInf.setText(inf) 
+
+    def show_visual(self, focus = True):
+        self.show()
+        self.showMaximized()
+        if focus: self.setFocus()
+ 
 class HabWindow(GeneralWindow):
     id = 0
     def __init__(self, table_column_names, *args, **kwargs):
@@ -417,7 +428,7 @@ class ArqWindow(GeneralWindow):
 
     def get_arq_id_selected(self):
         v = self.get_element_selected_text(column=0)
-        if(v != None): return int(v)
+        if(v != None): return string_to_int(v)
         else: return None
 
     def set_time_checking_now(self):
@@ -455,7 +466,7 @@ class ArqWindow(GeneralWindow):
 
     def getWindowDataFront(self):
         super().getWindowDataFront()
-
+        
         id_arq = self.lineEditArqID.text()
         if(id_arq == ""): id_arq = None
         self.data_front.id_arq = id_arq
@@ -464,15 +475,15 @@ class ArqWindow(GeneralWindow):
         if(id_hab == ""): id_hab = None
         self.data_front.id_hab = id_hab
 
-        document = self.lineEditDocumento.text()
+        document = self.lineEditDocumento.text().lower()
         if (document == ""): document = None
         self.data_front.document = document
 
-        name = self.lineEditNombre.text()
+        name = self.lineEditNombre.text().lower()
         if(name == ""): name = None
         self.data_front.name = name
 
-        surname = self.lineEditApellido.text()
+        surname = self.lineEditApellido.text().lower()
         if (surname == ""): surname = None
         self.data_front.surname = surname
         
@@ -638,22 +649,25 @@ class NewArqWindow(GeneralWindow):
                 CustomDialog("Error","Arquiler ID debe estar vacio para crear y los demas no.").exec()
             
         elif(type_op == "update"):
-            if((self.lineEditArqID.text() != "") and self.isDataInFormValid()):
-                arq.id = int(self.lineEditArqID.text())
+            arqID = string_to_int(self.lineEditArqID.text())
+            if((arqID != None) and self.isDataInFormValid()):
+                arq.id = arqID
             else:
                 err=err+1
                 CustomDialog("Error","Revise los datos, no debe haber vacios.").exec()
             
         elif(type_op == "search"):
-            if(self.lineEditArqID.text() != ""):
-                arq.id = int(self.lineEditArqID.text())
+            arqID = string_to_int(self.lineEditArqID.text())
+            if(arqID != None):
+                arq.id = arqID
             else:
                 err=err+1
                 CustomDialog("Error","Arquiler ID no debe estar vacio para buscar.").exec()
 
         elif(type_op == "delete"):
-            if(self.lineEditArqID.text() != ""):
-                arq.id = int(self.lineEditArqID.text())
+            arqID = string_to_int(self.lineEditArqID.text())
+            if(arqID != None):
+                arq.id = arqID
             else:
                 err=err+1
                 CustomDialog("Error","Arquiler ID no debe estar vacio para eliminar.").exec()
@@ -662,17 +676,24 @@ class NewArqWindow(GeneralWindow):
             arq = None
             cliDoc = None
         else:
+            err = 0
             arq.id_hab = self.lineEditHabID.text()
             arq.id_cli = None
-            arq.id_emp = int(id_emp)
+            arq.id_emp = string_to_int(id_emp)
 
             pri_str = self.lineEditPrice.text()
             if(pri_str==""): arq.precioReal = None
-            else: arq.precioReal = float(pri_str)
+            else: arq.precioReal = string_to_float(pri_str)
+            if(arq.precioReal == None):
+                err = err+1
+                if(type_op != "search" and type_op != "delete"):CustomDialog("Error","Precio no válido").exec()
 
             deu_str = self.lineEditDeuda.text()
             if(deu_str==""): arq.deuda = None
-            else: arq.deuda = float(self.lineEditDeuda.text())
+            else: arq.deuda = string_to_float(deu_str)
+            if(arq.deuda == None):
+                err = err+1
+                if(type_op != "search" and type_op != "delete"): CustomDialog("Error","Deuda no válida").exec()
             
             if(self.timeEditChecking.dateTime() == self.timeEditChecking.minimumDateTime()): arq.fechaHoraChecking = None
             else: arq.fechaHoraChecking = self.timeEditChecking.dateTime().toPyDateTime()
@@ -688,14 +709,18 @@ class NewArqWindow(GeneralWindow):
                 
             arq.hab_reg = Habitaciones_registro()
 
-            arq.hab_reg.id = arq.id_hab_reg
+            arq.hab_reg.id = None # Will be taken from the db id of arquiler
             arq.hab_reg.id_hab = arq.id_hab
+            arq.hab_reg.id_hab_est = None
 
             est_str = self.comboBoxState.currentText()
-            if(est_str==""): arq.hab_reg.id_hab_est = None
+            if(est_str=="(Estado no válido)" or est_str==""):
+                arq.hab_reg.id_hab_est = None
+                err = err+1
+                if(type_op != "search" and type_op != "delete"): CustomDialog("Error","Estado no válido").exec()
             else:
                 found = False
-                default_last_is_in_arquiler = 0
+                default_last_is_in_arquiler = None
                 for k in d_Hab_est.keys():
                     if(d_Hab_est[k].value == est_str):
                         arq.hab_reg.id_hab_est = d_Hab_est[k].id
@@ -703,8 +728,8 @@ class NewArqWindow(GeneralWindow):
                     if(d_Hab_est[k].is_in_arquiler == "True"):
                         default_last_is_in_arquiler = d_Hab_est[k].id
 
-
-                if(found == False or arq.hab_reg.id_hab_est == None): arq.hab_reg.id_hab_est = default_last_is_in_arquiler
+                if(found == False or arq.hab_reg.id_hab_est == None):
+                    arq.hab_reg.id_hab_est = default_last_is_in_arquiler
 
             arq.hab_reg.fechaHoraInicio = arq.fechaHoraChecking
             arq.hab_reg.fechaHoraFin = arq.fechaHoraCheckout
@@ -715,10 +740,16 @@ class NewArqWindow(GeneralWindow):
             #    h.lastUpdate = None
 
             #datetime_object = self.timeEditChecking.dateTime().toPyDateTime().strftime("%m/%d/%Y, %H:%M:%S")
-            cliDoc = self.lineEditDocument.text()
+            cliDoc = self.lineEditDocument.text().lower()
            
             #QDateTime.toString("yyyy-MM-dd hh:mm:ss")
             #QDateTimeEdit.dateTime().toString("yyyy-MM-dd hh:mm:ss")
+        
+        if(err!=0 and type_op != "search" and type_op != "delete"):
+            arq = None
+            cliDoc = None
+            CustomDialog("Error","Revise bien los datos").exec()
+
         return arq, cliDoc
     
     def fillData_arq(self, arq: Arquiler):
@@ -893,7 +924,10 @@ class NewHabRegWindow(GeneralWindow):
             return True
 
     def isDateStartValid(self):
-        return True  
+        if(self.timeEditHabRegStart.dateTime() == self.timeEditHabRegStart.minimumDateTime()): 
+            return False
+        else:
+            return True  
 
     def isDateEndValid(self):
         return True  
@@ -918,22 +952,25 @@ class NewHabRegWindow(GeneralWindow):
                 CustomDialog("Error","Estados ID debe estar vacio para crear y los demas no.").exec()
             
         elif(type_op == "update"):
-            if((self.lineEditHabRegID.text() != "") and self.isDataInFormValid()):
-                hr.id = int(self.lineEditHabRegID.text())
+            hrID = string_to_int(self.lineEditHabRegID.text())
+            if((hrID != None) and self.isDataInFormValid()):
+                hr.id = hrID
             else:
                 err=err+1
                 CustomDialog("Error","Revise los datos.").exec()
             
         elif(type_op == "search"):
-            if(self.lineEditHabRegID.text() != ""):
-                hr.id = int(self.lineEditHabRegID.text())
+            hrID = string_to_int(self.lineEditHabRegID.text())
+            if(hrID != None):
+                hr.id = hrID
             else:
                 err=err+1
                 CustomDialog("Error","Estados ID no debe estar vacio para buscar.").exec()
 
         elif(type_op == "delete"):
-            if(self.lineEditHabRegID.text() != ""):
-                hr.id = int(self.lineEditHabRegID.text())
+            hrID = string_to_int(self.lineEditHabRegID.text())
+            if(hrID != None):
+                hr.id = hrID
             else:
                 err=err+1
                 CustomDialog("Error","Estados ID no debe estar vacio para eliminar.").exec()
@@ -984,7 +1021,7 @@ class ClientWindow(GeneralWindow):
 
     def get_cli_id_selected(self):
         v = self.get_element_selected_text(column=0)
-        if(v != None): return int(v)
+        if(v != None): return string_to_int(v)
         else: return None
 
     def get_cli_doc_selected(self):
@@ -1015,15 +1052,15 @@ class ClientWindow(GeneralWindow):
         if(id_cli == ""): id_cli = None
         self.data_front.id_cli = id_cli
 
-        document = self.lineEditDocumento.text()
+        document = self.lineEditDocumento.text().lower()
         if (document == ""): document = None
         self.data_front.document = document
 
-        name = self.lineEditNombre.text()
+        name = self.lineEditNombre.text().lower()
         if(name == ""): name = None
         self.data_front.name = name
 
-        surname = self.lineEditApellido.text()
+        surname = self.lineEditApellido.text().lower()
         if (surname == ""): surname = None
         self.data_front.surname = surname
 
@@ -1106,7 +1143,7 @@ class HabRegWindow(GeneralWindow):
 
     def get_hab_reg_id_selected(self):
         v = self.get_element_selected_text(column=0)
-        if(v != None): return int(v)
+        if(v != None): return string_to_int(v)
         else: return None
 
     def updateUsingWindowDataFront(self):
@@ -1248,7 +1285,7 @@ class NewClientFunctions():
     def getDocumentFromForm(self, widg):
         s = None
         if(not widg.isDocEmpty_cli()):
-            s = str(widg.lineEditDocument.text())
+            s = str(widg.lineEditDocument.text().lower())
         else:
             CustomDialog("Error","Documento no pueda estar vacio").exec()
         return s
@@ -1256,9 +1293,9 @@ class NewClientFunctions():
     def getClientFromForm(self, widg):
         c = Cliente()
         if(not widg.isDocEmpty_cli()):
-            c.nDocumento = widg.lineEditDocument.text()
-            c.nombre = widg.lineEditName.text()
-            c.apellido = widg.lineEditLastName.text()
+            c.nDocumento = widg.lineEditDocument.text().lower()
+            c.nombre = widg.lineEditName.text().lower()
+            c.apellido = widg.lineEditLastName.text().lower()
             c.celular = widg.lineEditCellphone.text()
             c.datosAdicionales = widg.lineEditAdditionalData.toPlainText()
         else:
@@ -1275,8 +1312,6 @@ class NewClientFunctions():
     def setInf(self, widg, mssg):
         widg.labelInfClient.setText(mssg)
 
-
- 
 class DatabaseWindow(GeneralWindow):
     id = 9
 
@@ -1304,6 +1339,9 @@ class DatabaseWindow(GeneralWindow):
     def getPathDestination(self):
         return self.lineEditDBDestination.text()
     
+    def getWordToHash(self):
+        return self.lineEditWordToHash.text()
+    
     def setPath(self, path:str):
         self.lineEditDB.setText(path)
 
@@ -1325,6 +1363,34 @@ class DatabaseWindow(GeneralWindow):
         self.lineEditDBSource.setText("")
         self.lineEditDBDestination.setText("")
         self.txtEditOutput.setPlainText("")
+
+class LoginWindow(GeneralWindow):
+    id = 10
+
+    def __init__(self, *args, **kwargs):
+        data_back = Window_data()
+        data_back.path_gui = './ui/login.ui'
+        data_back.title_window = "Login - HGP"
+        data_back.has_table = False
+        data_back.has_pages = False
+
+        super().__init__(data_back=data_back,*args, **kwargs)
+
+    def show_visual(self, focus = True):
+        self.setFocus()
+        self.show()
+        self.raise_()
+        #self.blockSignals(False)
+
+    def getUsername(self):
+        return self.usuarioIDLineEdit.text()
+    
+    def getPasword(self):
+        return self.contraseALineEdit.text()
+
+    def clearWindow(self):
+        self.usuarioIDLineEdit.setText("")
+        self.contraseALineEdit.setText("")
 
 class CustomDialog(QDialog):
     def __init__(self, t, m):
@@ -1377,10 +1443,6 @@ class TestWindow(QtWidgets.QWidget):
         #self.activateWindow()
         #self.raise_()
         #self.blockSignals(False)
-
-
-    QTableWidget.style
-
 
 
 class MainWindowMoid(MainWindow): #needs improvment
@@ -1502,3 +1564,14 @@ class MainWindowMoid(MainWindow): #needs improvment
         win_act = self.get_win_by_pos(curr_pos)
         if(win_act != None): self.mdiAreaMain.setActiveSubWindow(win_act.subWindowRef)
 
+def string_to_int(s):
+    try:
+        return int(s)
+    except ValueError:
+        return None
+    
+def string_to_float(s):
+    try:
+        return float(s)
+    except ValueError:
+        return None    
