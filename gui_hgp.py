@@ -4,8 +4,10 @@ from PyQt6 import uic
 from PyQt6.QtWidgets import *
 from db_model import *
 from PyQt6.QtCore import Qt, QDateTime, QDate
+from PyQt6.QtCore import Qt, QDateTime, QDate
+from PyQt6.QtGui import QKeyEvent, QShortcut, QKeySequence
 #from main import *
-import datetime
+from datetime import datetime
 
 global controllerHGP
 
@@ -1272,7 +1274,58 @@ class NewClientFunctions():
         
     def setInf(self, widg, mssg):
         widg.labelInfClient.setText(mssg)
-           
+
+
+ 
+class DatabaseWindow(GeneralWindow):
+    id = 9
+
+    def __init__(self, *args, **kwargs):
+        data_back = Window_data()
+        data_back.path_gui = './ui/db.ui'
+        data_back.title_window = "Database"
+        data_back.has_table = False
+        data_back.has_pages = False
+
+        super().__init__(data_back=data_back,*args, **kwargs)
+
+    def show_visual(self, focus = True):
+        self.setFocus()
+        self.show()
+        self.raise_()
+        #self.blockSignals(False)
+
+    def getPathInUse(self):
+        return self.lineEditDB.text()
+    
+    def getPathSource(self):
+        return self.lineEditDBSource.text()
+    
+    def getPathDestination(self):
+        return self.lineEditDBDestination.text()
+    
+    def setPath(self, path:str):
+        self.lineEditDB.setText(path)
+
+    def getInf(self):
+        return self.txtEditOutput.toPlainText()
+    
+    def setInf(self, i:str):
+        self.txtEditOutput.setPlainText(i)
+    
+    def addToInf(self, m:str):
+        i = self.getInf()
+        self.txtEditOutput.setPlainText(i+"\n"+ str(datetime.now()) + ": " + m)
+    
+    def clearInf(self, i:str):
+        self.txtEditOutput.setPlainText("")
+
+    def clearWindow(self):
+        self.lineEditDB.setText("")
+        self.lineEditDBSource.setText("")
+        self.lineEditDBDestination.setText("")
+        self.txtEditOutput.setPlainText("")
+
 class CustomDialog(QDialog):
     def __init__(self, t, m):
         super().__init__()
@@ -1327,3 +1380,125 @@ class TestWindow(QtWidgets.QWidget):
 
 
     QTableWidget.style
+
+
+
+class MainWindowMoid(MainWindow): #needs improvment
+    controller = None
+    def __init__(self, controller):
+        super().__init__()
+        self.shortcut_prev = QShortcut(QKeySequence('Alt+1'), self)
+        self.shortcut_prev.activated.connect(self.event_when_prev_sub_window)
+
+        self.shortcut_next = QShortcut(QKeySequence('Alt+2'), self)
+        self.shortcut_next.activated.connect(self.event_when_next_sub_window)
+        self.controller = controller
+
+        self.shortcut_next_u = QShortcut(QKeySequence('Up'), self)
+        self.shortcut_next_u.activated.connect(self.mdiAreaMain.focusPreviousChild)
+
+        self.shortcut_next_d = QShortcut(QKeySequence('Down'), self)
+        self.shortcut_next_d.activated.connect(self.mdiAreaMain.focusNextChild)
+
+    def event_when_prev_sub_window(self):
+        #self.mdiAreaMain.focusPreviousChild()
+        curr_pos = self.get_current_active_pos()
+        found = False
+        var_pos = curr_pos
+        for i in range(7):
+            if(var_pos == 0): var_pos = 7
+            var_pos = var_pos - 1
+            win = self.get_win_by_pos(var_pos)
+            if(win.isCreated != None and win.isCreated== True and found ==False):
+                next_act_pos = var_pos
+                found = True
+        win_act = self.get_win_by_pos(next_act_pos)
+        self.mdiAreaMain.setActiveSubWindow(win_act.subWindowRef)
+
+    def event_when_next_sub_window(self):
+        #self.mdiAreaMain.focusNextChild()
+        curr_pos = self.get_current_active_pos()
+        found = False
+        var_pos = curr_pos 
+        for i in range(7):
+            if(var_pos == 6): var_pos = -1
+            var_pos = var_pos + 1
+            win = self.get_win_by_pos(var_pos)
+            if(win.isCreated != None and win.isCreated== True and found ==False):
+                next_act_pos = var_pos
+                found = True
+        win_act = self.get_win_by_pos(next_act_pos)
+        if(win_act != None): self.mdiAreaMain.setActiveSubWindow(win_act.subWindowRef)
+
+    def get_current_active_pos(self):
+        curr_act = self.mdiAreaMain.activeSubWindow()   
+        match curr_act:
+            case self.controller.habWindow.subWindowRef:
+                return 0
+            case self.controller.arqWindow.subWindowRef:
+                return 1
+            case self.controller.cliWindow.subWindowRef:
+                return 2
+            case self.controller.habRegWindow.subWindowRef:
+                return 3
+            case self.controller.newCliWindow.subWindowRef:
+                return 4
+            case self.controller.newArqWindow.subWindowRef:
+                return 5
+            case self.controller.newHabRegWindow.subWindowRef:
+                return 6
+            case _:
+                return None
+
+    def get_win_by_pos(self, pos):
+        match pos:
+            case 0 :
+                return self.controller.habWindow
+            case 1 :
+                return self.controller.arqWindow
+            case 2 : 
+                return self.controller.cliWindow
+            case 3 : 
+                return self.controller.habRegWindow
+            case 4 : 
+                return self.controller.newCliWindow
+            case 5 : 
+                return self.controller.newArqWindow
+            case 6 : 
+                return self.controller.newHabRegWindow
+            case _:
+                return None
+
+    def update_win_by_pos(self, pos):
+        match pos:
+            case 0 :
+                self.controller.callback_habW_update()
+            case 1 :
+                self.controller.callback_arqW_update()
+            case 2 : 
+                self.controller.callback_cliW_update()
+            case 3 : 
+                self.controller.callback_habRegW_update()
+            case 4 : 
+                return 0
+            case 5 : 
+                return 0
+            case 6 : 
+                return 0
+            case _:
+                return None
+
+    def update_all_opened_windows(self):
+        #self.mdiAreaMain.focusNextChild()
+        curr_pos = self.get_current_active_pos()
+        var_pos = curr_pos 
+        for i in range(7):
+            if(var_pos == 6): var_pos = -1
+            var_pos = var_pos + 1
+            win = self.get_win_by_pos(var_pos)
+            if(win.isCreated != None and win.isCreated== True):
+                win = self.update_win_by_pos(var_pos)
+            
+        win_act = self.get_win_by_pos(curr_pos)
+        if(win_act != None): self.mdiAreaMain.setActiveSubWindow(win_act.subWindowRef)
+

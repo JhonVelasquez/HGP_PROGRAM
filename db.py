@@ -13,15 +13,21 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 import inspect
 from db_model import *
 
+import os
+import re
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
+from urllib.parse import urlparse, urlunparse
+from sqlalchemy import text
+
 class DataBase():
     url_db = None
     engine = None
     session = None
     #inspection = None
     
-    def init_db(self):
-        #self.url_db = "sqlite:///.\\db\\hgp.db"
-        self.url_db = "mysql+pymysql://root:R0ck0!@localhost:3306/hgp_dev"
+    def __init__(self, url):
+        self.url_db = url
         self.engine = create_engine(self.url_db)
         #self.inspection = inspect(engine)
 
@@ -75,7 +81,7 @@ class DataBase():
                 hab.fut_registers =         self.get_dic_table_registro(inicio_min= now, inicio_max= None, empty_inicio= False, fin_min= None, fin_max= None, empty_fin= None, id_hab= hab.id, n_last= 3, order_by = order_by, inverted= inverted)
                 d_hab[hab.id]=hab
             
-                if ((hab.id_permanent_state == 0) or ((hab.id_permanent_state == 1) and (len(hab.now_def_registers)==0))):#  0 state value 1 is "Indisponible", 1 is "Disponible"
+                if ((hab.id_permanent_state == 0) or ((hab.id_permanent_state == 1) and (len(hab.now_def_registers)==0) and (len(hab.now_undef_registers)==0))):#  0 state value is "Indisponible", 1 is "Disponible"
                     hr = Habitaciones_registro()
                     hr.id = None
                     hr.id_hab_est = hab.id_permanent_state
@@ -518,3 +524,121 @@ class DataBase():
     def get_test():
       
         return 0
+    
+
+
+
+def validate_connection_string(connection_string):
+    sqlite_pattern = re.compile(r'sqlite:///(.+.db)')
+    mysql_pattern = re.compile(r'mysql\+pymysql://[^:]+:[^@]+@[^:]+:\d+/[^/]+')
+
+    if sqlite_pattern.match(connection_string):
+        return 'sqlite'
+    elif mysql_pattern.match(connection_string):
+        return 'mysql'
+    else:
+        return None
+
+def get_absolute_path(connection_string):
+    parsed_url = urlparse(connection_string)
+    db_path = parsed_url.path
+
+    # Handle both forward and backward slashes
+    if db_path.startswith('/') or db_path.startswith('\\'):
+        db_path = db_path[1:]
+
+    # Normalize and get the absolute path
+    db_file = os.path.abspath(os.path.normpath(db_path))
+    return db_file
+
+def verify_path_existance(connection_string):
+    db_file = get_absolute_path(connection_string)
+    e = os.path.exists(db_file)
+    return e, ("Path exists: "+str(e))
+
+def validate_db_url(connection_string):
+    db_type = validate_connection_string(connection_string)
+    if db_type == 'sqlite':
+        e,m = verify_path_existance(connection_string)
+        if (e == True):
+            try:
+                return True, "Success validating db URL SQLITE", 'sqlite'
+            except SQLAlchemyError as e:
+                #print(f"Error occurred: {e}")
+                return False, (f"Error occurred: {e}"), None
+        else:
+            #print(f"The SQLite database file {connection_string} does not exist.")
+            return False, (f"The SQLite database file {connection_string} does not exist."), None
+    elif db_type == 'mysql':
+        # MySQL database
+        try:
+            return True, "Success validating db URL MYSQL", 'mysql'
+        except SQLAlchemyError as e:
+            #print(f"Error occurred: {e}")
+            return False, (f"Error occurred: {e}"), None
+    else:
+        return False, ("Invalid or unsupported connection string format"), None
+
+def ping_database(connection_string):
+    engine = create_engine(connection_string)
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT 1"))
+            if result.fetchone():
+                #print("Successfully connected to the database")
+                return True, ("Successfully connected to the database")
+            else:
+                #print("Failed to connect to the database")
+                return False, ("Failed to connect to the database")
+    except SQLAlchemyError as e:
+        #print(f"Error occurred: {e}")
+        return False, (f"Error occurred: {e}")
+
+def validate_ping_db(connection_string):
+    validate, mval, type_db = validate_db_url(connection_string)
+    if(validate):
+        return ping_database(connection_string)
+    else:
+        return False, mval
+    
+def validate_create_db(url_str: str):
+    result = False
+    type_db = validate_connection_string(url_str)
+    #isValid, mssg, type_db = validate_db_url(url_str)
+    if(type_db == 'mysql'):
+        try:
+            url = urlparse(url_str)
+            db_name = url.path.lstrip('/')
+            url_without_db = urlunparse(url._replace(path=''))
+            engine_no_db = create_engine(url_without_db)
+            
+            therePing, mssgPing  = ping_database(url_without_db)
+            if(therePing == True):
+                with engine_no_db.connect() as conn:
+                    conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {db_name}"))
+
+            therePing, mssgPing  = ping_database(url_str)
+            return therePing, mssgPing
+        except SQLAlchemyError as e:
+            return False, (f"Error occurred: {e}")
+    elif(type_db == 'sqlite'):
+        return True, "Ruta válida"
+    else:
+        return False, "Ruta inválida"
+
+def read_db_file():
+    content = ""
+    file_path = 'db_address.txt'
+    try:
+        with open( file_path,'r') as data:  
+            content = str(data.read()) 
+    except FileNotFoundError:
+        with open(file_path, 'w') as file:
+            file.write("")
+            content = ""
+    return content
+
+def write_db_file(content: str):
+    file_path = 'db_address.txt'
+    with open( file_path,'w') as data:  
+        data.write(content)   

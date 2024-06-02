@@ -10,6 +10,7 @@ from sqlalchemy import join
 
 from db_model import *
 from db import *
+from migrate_db import *
 
 from gui_hgp import *
 from datetime import datetime
@@ -21,101 +22,12 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6 import uic
 from PyQt6.QtWidgets import *
 from db_model import *
-from PyQt6.QtCore import Qt, QDateTime, QDate
-from PyQt6.QtGui import QKeyEvent, QShortcut, QKeySequence
 
-db_hgp = DataBase()
-db_hgp.init_db()
 
-class MainWindowMoid(MainWindow): #needs improvment
-    controller = None
-    def __init__(self, controller):
-        super().__init__()
-        self.shortcut_prev = QShortcut(QKeySequence('Alt+1'), self)
-        self.shortcut_prev.activated.connect(self.event_when_prev_sub_window)
 
-        self.shortcut_next = QShortcut(QKeySequence('Alt+2'), self)
-        self.shortcut_next.activated.connect(self.event_when_next_sub_window)
-        self.controller = controller
-
-        self.shortcut_next_u = QShortcut(QKeySequence('Up'), self)
-        self.shortcut_next_u.activated.connect(self.mdiAreaMain.focusPreviousChild)
-
-        self.shortcut_next_d = QShortcut(QKeySequence('Down'), self)
-        self.shortcut_next_d.activated.connect(self.mdiAreaMain.focusNextChild)
-
-    def event_when_prev_sub_window(self):
-        #self.mdiAreaMain.focusPreviousChild()
-        curr_pos = self.get_current_active_pos()
-        found = False
-        var_pos = curr_pos
-        for i in range(7):
-            if(var_pos == 0): var_pos = 7
-            var_pos = var_pos - 1
-            win = self.get_win_by_pos(var_pos)
-            if(win.isCreated != None and win.isCreated== True and found ==False):
-                next_act_pos = var_pos
-                found = True
-        win_act = self.get_win_by_pos(next_act_pos)
-        self.mdiAreaMain.setActiveSubWindow(win_act.subWindowRef)
-
-    def event_when_next_sub_window(self):
-        #self.mdiAreaMain.focusNextChild()
-        curr_pos = self.get_current_active_pos()
-        found = False
-        var_pos = curr_pos 
-        for i in range(7):
-            if(var_pos == 6): var_pos = -1
-            var_pos = var_pos + 1
-            win = self.get_win_by_pos(var_pos)
-            if(win.isCreated != None and win.isCreated== True and found ==False):
-                next_act_pos = var_pos
-                found = True
-        win_act = self.get_win_by_pos(next_act_pos)
-        self.mdiAreaMain.setActiveSubWindow(win_act.subWindowRef)
-
-    def get_current_active_pos(self):
-        curr_act = self.mdiAreaMain.activeSubWindow()   
-        match curr_act:
-            case self.controller.habWindow.subWindowRef:
-                return 0
-            case self.controller.arqWindow.subWindowRef:
-                return 1
-            case self.controller.cliWindow.subWindowRef:
-                return 2
-            case self.controller.habRegWindow.subWindowRef:
-                return 3
-            case self.controller.newCliWindow.subWindowRef:
-                return 4
-            case self.controller.newArqWindow.subWindowRef:
-                return 5
-            case self.controller.newHabRegWindow.subWindowRef:
-                return 6
-            case _:
-                return None
-
-    def get_win_by_pos(self, pos):
-        match pos:
-            case 0 :
-                return self.controller.habWindow
-            case 1 :
-                return self.controller.arqWindow
-            case 2 : 
-                return self.controller.cliWindow
-            case 3 : 
-                return self.controller.habRegWindow
-            case 4 : 
-                return self.controller.newCliWindow
-            case 5 : 
-                return self.controller.newArqWindow
-            case 6 : 
-                return self.controller.newHabRegWindow
-            case _:
-                return None
-
-QWidget.keyPressEvent
 class Controller():
     mainWindow = None
+    dbWindow = None
 
     habWindow = None
     arqWindow = None
@@ -129,6 +41,7 @@ class Controller():
     testWindow = None
 
     currentEmpleadoID = None
+    db_hgp = None
 
     #Almost fixed
     d_Empleado = {}
@@ -143,34 +56,54 @@ class Controller():
     d_Hab_Reg = {}
     d_var={}
 
+    failback_path = "sqlite:///"
+    def __init__(self, failback_path):
+        self.failback_path = failback_path
+
+    def init_db(self):
+        path = read_db_file()
+        val, e_m = validate_ping_db(path)
+
+        if(val == False):
+            CustomDialog("Error","La conexión a la Base de Datos (DB): \""+str(path)+ "\" falló. "+ "Usando el de respaldo:\""+str(self.failback_path)+ "\". ").exec()
+            path = self.failback_path
+
+        self.db_hgp = DataBase(path)
+        self.load_default_values()
+
+    def setNewDB(self, path: str):
+        self.db_hgp = DataBase(path)
+        self.load_default_values()
+        self.mainWindow.update_all_opened_windows()
 
     def load_default_values(self):
-        self.d_Empleado=db_hgp.get_dic_table_from_class(Empleado).copy()
-        self.d_Hab_cam=db_hgp.get_dic_table_from_class(Habitacion_cama).copy()
-        self.d_Hab_car=db_hgp.get_dic_table_from_class(Habitacion_caracteristica).copy()
-        self.d_Hab_est=db_hgp.get_dic_table_from_class(Habitacion_estado).copy()
+        self.d_Empleado=self.db_hgp.get_dic_table_from_class(Empleado).copy()
+        self.d_Hab_cam=self.db_hgp.get_dic_table_from_class(Habitacion_cama).copy()
+        self.d_Hab_car=self.db_hgp.get_dic_table_from_class(Habitacion_caracteristica).copy()
+        self.d_Hab_est=self.db_hgp.get_dic_table_from_class(Habitacion_estado).copy()
 
     def get_values_hab(self):
         self.d_Habitaciones = {}
-        self.d_Habitaciones = db_hgp.get_dic_table_habitacion(asc_piso=True, asc_id_hab=True, asc_precioReferencia=False)
+        self.d_Habitaciones = self. db_hgp.get_dic_table_habitacion(asc_piso=True, asc_id_hab=True, asc_precioReferencia=False)
         
     def get_values_arq(self,id_arq= None, id_hab= None, document= None, name= None, surname= None, id_hab_reg= None, id_hab_est= None, fecha_checking= None, order_by= None):
-        new = db_hgp.get_dic_table_arquiler(id_arq= id_arq, id_hab= id_hab, document= document, name= name, surname= surname, id_hab_reg= id_hab_reg, id_hab_est= id_hab_est, fecha_checking= fecha_checking, order_by= order_by, n_last = None, page_size= self.arqWindow.getSizePage(), page_current= self.arqWindow.getCurrentPage())
+        new = self. db_hgp.get_dic_table_arquiler(id_arq= id_arq, id_hab= id_hab, document= document, name= name, surname= surname, id_hab_reg= id_hab_reg, id_hab_est= id_hab_est, fecha_checking= fecha_checking, order_by= order_by, n_last = None, page_size= self.arqWindow.getSizePage(), page_current= self.arqWindow.getCurrentPage())
         
         return new
 
     def get_values_client(self, id_cli= None, nDocumento = None, nombre = None, apellido = None, celular = None, order_by = None):
-        new = db_hgp.get_dic_table_cliente(id_cli= id_cli, nDocumento = nDocumento, nombre = nombre, apellido = apellido, celular= celular, order_by= order_by,n_last = None, page_size= self.cliWindow.getSizePage(), page_current= self.cliWindow.getCurrentPage())
+        new = self. db_hgp.get_dic_table_cliente(id_cli= id_cli, nDocumento = nDocumento, nombre = nombre, apellido = apellido, celular= celular, order_by= order_by,n_last = None, page_size= self.cliWindow.getSizePage(), page_current= self.cliWindow.getCurrentPage())
         return new
 
     def get_values_hab_reg(self, id_hab_reg = None, id_hab = None, id_hab_est = None, dateInicio= None, order_by=None):
-        new = db_hgp.get_dic_table_registro(id_hab_reg= id_hab_reg, id_hab= id_hab, id_hab_est= id_hab_est, n_last= None, dateInicio= dateInicio, order_by=order_by, page_size= self.habRegWindow.getSizePage(), page_current= self.habRegWindow.getCurrentPage())
+        new = self. db_hgp.get_dic_table_registro(id_hab_reg= id_hab_reg, id_hab= id_hab, id_hab_est= id_hab_est, n_last= None, dateInicio= dateInicio, order_by=order_by, page_size= self.habRegWindow.getSizePage(), page_current= self.habRegWindow.getCurrentPage())
         return new
            
     def init_visual_main(self):
         app = QtWidgets.QApplication(sys.argv) 
         #app.setStyleSheet(dark_theme)       
         self.mainWindow = MainWindowMoid(self)
+        self.dbWindow = DatabaseWindow()
         
         #qdarktheme.setup_theme()
         # Customize accent color.
@@ -179,6 +112,9 @@ class Controller():
         #self.mainWindow.mdiAreaMain.tileSubWindows()
 
         self.currentEmpleadoID = 5
+
+        self.init_db()
+        self.dbW_init()   
 
         self.habW_init()   
         self.cliW_init()
@@ -193,6 +129,7 @@ class Controller():
         self.mainWindow.btnArq.clicked.connect(self.callback_mainW_openArqW)
         self.mainWindow.btnClient.clicked.connect(self.callback_mainW_openClientW)
         self.mainWindow.btnSunat.clicked.connect(self.callback_mainW_sunat)
+        self.mainWindow.btnDB.clicked.connect(self.callback_mainW_db)
 
         self.mainWindow.btnAddArquiler.clicked.connect(self.callback_arqW_openNewArqW)
         self.mainWindow.btnAddClient.clicked.connect(self.callback_cliW_openNewCliW)
@@ -207,6 +144,13 @@ class Controller():
         
 
         sys.exit(app.exec())
+
+    def dbW_init(self):
+        self.dbWindow = DatabaseWindow()
+        self.dbWindow.btnPingDB.clicked.connect(self.callback_dbW_ping)
+        self.dbWindow.btnSavePath.clicked.connect(self.callback_dbW_save)
+        self.dbWindow.btnLoadPath.clicked.connect(self.callback_dbW_load)
+        self.dbWindow.btnMigrate.clicked.connect(self.callback_dbW_migrate)
 
     def habW_init(self):
         self.habWindow = HabWindow(table_column_names= table_hab_column_names)
@@ -315,10 +259,66 @@ class Controller():
 
     def callback_mainW_sunat(self):
         webbrowser.open('https://e-menu.sunat.gob.pe/cl-ti-itmenu/MenuInternet.htm?pestana=*&agrupacion=*')
+    
+    def callback_mainW_db(self):
+        self.dbWindow.show_visual()
 
+    #CALLBACKS - DATABASE WINDOW
+    
+    def load_path_from_file():
+        path = read_db_file()
+        val, e_m, type_db = validate_db_url(path)
+
+    def callback_dbW_load(self): 
+        path = read_db_file()
+        val, e_m, type_db = validate_db_url(path)
+        self.dbWindow.setInf(e_m)
+
+        if(val == True):
+            self.dbWindow.setPath(path)
+        else:
+            self.dbWindow.addToInf("Wrong path")
+            self.dbWindow.addToInf(path)
+            default = self.failback_path
+            self.dbWindow.setPath(default)
+            #write_db_file(default)
+
+    def callback_dbW_migrate(self):
+        source = self.dbWindow.getPathSource()
+        destination = self.dbWindow.getPathDestination()
+        mssg_f, mssg_t = migrar_db(source, destination)
+        self.dbWindow.addToInf(mssg_f)
+        self.dbWindow.addToInf(mssg_t)
+        
+    def callback_dbW_ping(self):
+        
+        """         
+        path = self.dbWindow.getPathInUse()
+        val, e_m = verify_path_existance(path)
+        self.dbWindow.setInf(str(datetime.now()) + ": "  + e_m)
+        val, e_m = validate_db_url(path)
+        i = self.dbWindow.getInf()
+        self.dbWindow.setInf(i+"\n"+ str(datetime.now()) + ": "  +  e_m) 
+        """
+
+        path = self.dbWindow.getPathInUse()
+        val, e_m = validate_ping_db(path)
+        self.dbWindow.setInf(e_m)
+
+    def callback_dbW_save(self):
+        path = self.dbWindow.getPathInUse()
+        
+        val, e_m = validate_ping_db(path)
+        self.dbWindow.setInf(e_m)
+
+        if(val == True):
+            write_db_file(path)
+            self.setNewDB(path)
+
+    
     #CALLBACKS - HABITACION WINDOW
     def callback_habW_update(self):
-        self.habW_update_values_table()
+        self.habW_show_update(foc = True)
 
     def callback_habW_openHabRegW(self):
         self.habRegW_show_update(foc= True, reset_back= True)
@@ -452,11 +452,11 @@ class Controller():
             id_arq_form = arq_form.id
             
             #verifying Arquiler
-            arq_db = db_hgp.get_arq_by_id(id_arq_form)
+            arq_db = self. db_hgp.get_arq_by_id(id_arq_form)
             if (arq_db!=None):
                 try:
                     #verifying client doc and id
-                    cl = db_hgp.get_client_by_doc(cli_doc)
+                    cl = self. db_hgp.get_client_by_doc(cli_doc)
                     if (cl!=None):           
                         arq_form.id_cli = cl.id
                         self.newArqWindow.setInf_cli("Valido")
@@ -466,7 +466,7 @@ class Controller():
                         err=err+1
 
                     #verifying habitacion id
-                    hab = db_hgp.get_hab_from_id(arq_form.id_hab)
+                    hab = self. db_hgp.get_hab_from_id(arq_form.id_hab)
                     if (hab!=None):
                         self.newArqWindow.setInf_hab("Valido")
                     else:
@@ -483,7 +483,7 @@ class Controller():
                         if(new_hab_reg!=None):
                             if(new_hab_reg.id!=None):
                                 arq_form.id_hab_reg = new_hab_reg.id
-                                db_hgp.update_hab_reg_Arquiler(arq_form)
+                                self. db_hgp.update_hab_reg_Arquiler(arq_form)
                                 self.newArqWindow.fillData_arq_habReg(new_hab_reg, d_Hab_est=self.d_Hab_est)
                     else:
                         self.f_habReg_update(hab_reg_form= arq_form.hab_reg, window= None, show_end_habRegW= show_end_habRegW, show_end_habW = False)
@@ -492,7 +492,7 @@ class Controller():
 
                     if(err == 0):
                         arq_form.lastUpdate = datetime.now()
-                        db_hgp.update_Arquiler(arq_form,arq_db)
+                        self. db_hgp.update_Arquiler(arq_form,arq_db)
                         self.f_newArq_search_fill(arq_form.id)
                         self.newArqWindow.setInf_arq("U:Listo")
                         if(show_end_arqW or (show_end_arqW == False and self.arqWindow.isCreated == True)): self.arqW_show_update(foc= False, id_select= arq_form.id)
@@ -520,7 +520,7 @@ class Controller():
             if (id_arq_form==None):
                 try:
                     #verifying client doc and id
-                    cl = db_hgp.get_client_by_doc(cli_doc)
+                    cl = self. db_hgp.get_client_by_doc(cli_doc)
                     if (cl!=None):           
                         arq_form.id_cli = cl.id
                         self.newArqWindow.setInf_cli("Valido")
@@ -530,7 +530,7 @@ class Controller():
                         err=err+1
 
                     #verifying habitacion id
-                    hab = db_hgp.get_hab_from_id(arq_form.id_hab)
+                    hab = self. db_hgp.get_hab_from_id(arq_form.id_hab)
                     if (hab!=None):
                         self.newArqWindow.setInf_hab("Valido")
                     else:
@@ -549,7 +549,7 @@ class Controller():
                                 self.newArqWindow.fillData_arq_habReg(new_hab_reg, d_Hab_est=self.d_Hab_est)
                                 
                         arq_form.lastUpdate = datetime.now()
-                        created_arq = db_hgp.create_Arquiler(arq_form)
+                        created_arq = self. db_hgp.create_Arquiler(arq_form)
                         self.newArqWindow.lineEditArqID.setText(str(created_arq.id))
                         self.newArqW_f_fill_hab_from_id(arq_form.id_hab)
                         self.newArqWindow.setInf_arq("C:Listo")
@@ -574,14 +574,14 @@ class Controller():
         arq_form, cli_doc = self.newArqWindow.getArqFromForm(self.d_Hab_est, self.currentEmpleadoID, "delete")
         if(arq_form != None):
             id_arq_form = arq_form.id
-            arq_db = db_hgp.get_arq_by_id(id_arq_form)
+            arq_db = self. db_hgp.get_arq_by_id(id_arq_form)
             if (arq_db!=None):
                 try:
-                        db_hgp.delete_Arquiler(arq_db)
+                        self. db_hgp.delete_Arquiler(arq_db)
                         self.newArqWindow.setInf_arq("C:Listo")
                         if(show_end_arqW or (show_end_arqW == False and self.arqWindow.isCreated == True)): self.arqW_show_update(foc= False)
                         if(arq_db.hab_reg != None and arq_db.hab_reg.id != None):
-                            db_hgp.delete_Hab_Reg(arq_db.hab_reg)
+                            self. db_hgp.delete_Hab_Reg(arq_db.hab_reg)
                             self.newArqW_f_fill_hab_from_id(arq_form.id_hab)
                             self.callback_newArqW_arq_create_prepare()
                             if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True)
@@ -639,10 +639,10 @@ class Controller():
         if(hab_reg_form != None):
             id_hab_reg_form = hab_reg_form.id
             #verifying reg
-            hab_reg_db = db_hgp.get_hab_reg_from_id(id_hab_reg_form)
+            hab_reg_db = self. db_hgp.get_hab_reg_from_id(id_hab_reg_form)
             if (hab_reg_db!=None):
                 try:
-                    db_hgp.delete_Hab_Reg(hab_reg_form)
+                    self. db_hgp.delete_Hab_Reg(hab_reg_form)
                     self.newHabRegWindow.setInf_hab_reg("C:Listo")
                     self.newHabRegW_f_fill_hab_from_id(hab_reg_form.id_hab)
                     if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True)
@@ -870,11 +870,11 @@ class Controller():
     def f_client_create_from_widget(self, widg, show_end_cliW= True):
         client =  widg.getClientFromForm_cli()
         if (client != None):
-            cl_db = db_hgp.get_client_by_doc(client.nDocumento)
+            cl_db = self. db_hgp.get_client_by_doc(client.nDocumento)
             if(cl_db == None):
                 try:
                     client.lastUpdate = datetime.now()
-                    created_cli = db_hgp.create_Client(client)
+                    created_cli = self. db_hgp.create_Client(client)
                     widg.setInf_cli("N:Listo")
                     if(show_end_cliW or (show_end_cliW == False and self.cliWindow.isCreated == True)): self.cliW_show_update(foc= False, reset_back= True, id_select= created_cli.id)
                 except Exception as err:
@@ -887,13 +887,13 @@ class Controller():
     def f_client_delete_from_widget(self, widg, show_end_cliW= False):
         client =  widg.getClientFromForm_cli()
         if (client != None):
-            cl_db = db_hgp.get_client_by_doc(client.nDocumento)
+            cl_db = self. db_hgp.get_client_by_doc(client.nDocumento)
             if(cl_db == None):
                 CustomDialog("Error","El cliente con documento " + str(client.nDocumento) +" no existe.\n\n").exec()
                 widg.setInf_cli("N:Intente de nuevo")
             else:
                 try:
-                    db_hgp.delete_Client(cl_db)
+                    self. db_hgp.delete_Client(cl_db)
                     widg.setInf_cli("N:Eliminado")
                     if(show_end_cliW or (show_end_cliW == False and self.cliWindow.isCreated == True)): self.cliW_show_update(foc= False, reset_back= True)
                 except Exception as err:
@@ -903,14 +903,14 @@ class Controller():
     def f_client_update_from_widget(self, widg, show_end_cliW= False):
         client =  widg.getClientFromForm_cli()
         if (client != None):
-            cl_db = db_hgp.get_client_by_doc(client.nDocumento)
+            cl_db = self. db_hgp.get_client_by_doc(client.nDocumento)
             if(cl_db == None):
                 CustomDialog("Error","El cliente con documento " + str(client.nDocumento) +" no existe.\n\n").exec()
                 widg.setInf_cli("N:Intente de nuevo")
             else:
                 try:
                     client.lastUpdate = datetime.now()
-                    db_hgp.update_Client(client,cl_db)
+                    self. db_hgp.update_Client(client,cl_db)
                     widg.setInf_cli("N:Listo")
                     if(show_end_cliW or (show_end_cliW == False and self.cliWindow.isCreated == True)): self.cliW_show_update(foc= False, reset_back= True, id_select= cl_db.id)
                 except Exception as err:
@@ -919,7 +919,7 @@ class Controller():
 
     def f_client_fill_widget_by_doc(self, widg, doc):
         if(doc != None):
-            cl = db_hgp.get_client_by_doc(doc)
+            cl = self. db_hgp.get_client_by_doc(doc)
             if (cl!=None):
                 widg.fillData_cli(cl)
                 widg.setInf_cli("B:Listo")
@@ -934,7 +934,7 @@ class Controller():
 
     def f_client_fill_widget_by_id(self, widg, id):
         if(id != None):
-            cl = db_hgp.get_client_by_id(id)
+            cl = self. db_hgp.get_client_by_id(id)
             if (cl!=None):
                 widg.fillData_cli(cl)
                 widg.setInf_cli("B:Listo")
@@ -953,14 +953,14 @@ class Controller():
 
     # General Arquiler
     def f_newArq_search_fill(self, id_arq ):
-        arq_db = db_hgp.get_arq_by_id(id_arq)
+        arq_db = self. db_hgp.get_arq_by_id(id_arq)
         if (arq_db!=None):
             self.newArqWindow.fillData_arq(arq_db)
 
             self.newArqW_f_fill_hab_from_id(arq_db.id_hab)
 
             doc = None
-            cli = db_hgp.get_client_by_id(arq_db.id_cli)
+            cli = self. db_hgp.get_client_by_id(arq_db.id_cli)
             if (cli == None): doc = None
             else: doc = cli.nDocumento
             self.f_client_fill_widget_by_doc(self.newArqWindow, doc)
@@ -1068,7 +1068,7 @@ class Controller():
     
     def newArqW_f_fill_hab_from_id(self, id_hab):
         if(id_hab != None):
-            hab = db_hgp.get_hab_from_id(id_hab)
+            hab = self. db_hgp.get_hab_from_id(id_hab)
             if (hab!=None):
                 self.newArqWindow.fillData_hab(hab, self.d_Hab_cam, self.d_Hab_est)
                 self.newArqWindow.setInf_hab("Valido")
@@ -1091,7 +1091,7 @@ class Controller():
 
     def newHabRegW_f_fill_hab_from_id(self, id_hab):
         if(id_hab != None):
-            hab = db_hgp.get_hab_from_id(id_hab)
+            hab = self. db_hgp.get_hab_from_id(id_hab)
             if (hab!=None):
                 self.newHabRegWindow.fillData_hab(hab, self.d_Hab_est)
                 self.newHabRegWindow.setInf_hab("Valido")
@@ -1105,7 +1105,7 @@ class Controller():
 
     def f_newHabReg_search_fill(self, hab_reg_id, window):  
             id_hab_reg_form = hab_reg_id
-            hab_reg_db = db_hgp.get_hab_reg_from_id(id_hab_reg_form)
+            hab_reg_db = self. db_hgp.get_hab_reg_from_id(id_hab_reg_form)
             if (hab_reg_db!=None):
                 self.newHabRegWindow.fillData_hab_reg(hab_reg_db, self.d_Hab_est)
                 self.newHabRegW_f_fill_hab_from_id(hab_reg_db.id_hab)
@@ -1119,11 +1119,11 @@ class Controller():
             id_hab_reg_form = hab_reg_form.id
             
             #verifying reg
-            hab_reg_db = db_hgp.get_hab_reg_from_id(id_hab_reg_form)
+            hab_reg_db = self. db_hgp.get_hab_reg_from_id(id_hab_reg_form)
             if (hab_reg_db!=None):
                 try:
                     #verifying habitacion id
-                    hab = db_hgp.get_hab_from_id(hab_reg_form.id_hab)
+                    hab = self. db_hgp.get_hab_from_id(hab_reg_form.id_hab)
                     if (hab!=None):
                         if(window != None): window.setInf_hab("Valido")
                     else:
@@ -1133,7 +1133,7 @@ class Controller():
 
                     if(err == 0):
                         hab_reg_form.lastUpdate = datetime.now()
-                        db_hgp.update_Hab_Reg(hab_reg_form,hab_reg_db)
+                        self. db_hgp.update_Hab_Reg(hab_reg_form,hab_reg_db)
                         if(window != None): window.setInf_hab_reg("U:Listo")
                         if(show_end_habRegW or (show_end_habRegW == False and self.habRegWindow.isCreated == True)): self.habRegW_show_update(foc= False, reset_back=True, id_select= hab_reg_form.id)
                         if(show_end_habW or (show_end_habW == False and self.habWindow.isCreated == True)): self.habW_show_update(foc= False, id_select= hab_reg_form.id_hab)
@@ -1153,7 +1153,7 @@ class Controller():
             if (id_hab_reg_form==None):
                 try:
                     #verifying habitacion id
-                    hab = db_hgp.get_hab_from_id(hab_reg_form.id_hab)
+                    hab = self. db_hgp.get_hab_from_id(hab_reg_form.id_hab)
                     if (hab!=None):
                         if(window != None): window.setInf_hab("Valido")
                     else:
@@ -1163,7 +1163,7 @@ class Controller():
 
                     if(err == 0):
                         hab_reg_form.lastUpdate = datetime.now()
-                        new_hab_reg = db_hgp.create_Hab_Reg(hab_reg_form)
+                        new_hab_reg = self. db_hgp.create_Hab_Reg(hab_reg_form)
                         if(window != None): 
                             window.lineEditHabRegID.setText(str(new_hab_reg.id))
                             window.setInf_hab_reg("C:Listo")
@@ -1180,25 +1180,17 @@ class Controller():
     
 
     def test_db_dunctions(self):
-        #d_var = db_hgp.get_dic_table_arquiler(id_hab="31", n_last=5, dateChecking=None)
-        #d_var = db_hgp.get_dic_table_arquiler()
-        #d_var = db_hgp.get_dic_table_registro(id_hab="B", n_last=5, dateChecking=None)
-        #d_var = db_hgp.get_dic_table_registro(id_hab="31")
-        #d_var = db_hgp.get_dic_table_cliente()
-        #db_hgp.printList(d_var)
+        #d_var = self. db_hgp.get_dic_table_arquiler(id_hab="31", n_last=5, dateChecking=None)
+        #d_var = self. db_hgp.get_dic_table_arquiler()
+        #d_var = self. db_hgp.get_dic_table_registro(id_hab="B", n_last=5, dateChecking=None)
+        #d_var = self. db_hgp.get_dic_table_registro(id_hab="31")
+        #d_var = self. db_hgp.get_dic_table_cliente()
+        #self. db_hgp.printList(d_var)
         #print(d_Habitaciones["B"])
         return 0
     
     def callback_test(self):
-        new = db_hgp.get_test()
-            
-controllerHGP = Controller()
-
-controllerHGP.get_values_hab()
-controllerHGP.load_default_values()
-controllerHGP.test_db_dunctions()
-controllerHGP.init_visual_main()
-
+        new = self. db_hgp.get_test()
 
 
 

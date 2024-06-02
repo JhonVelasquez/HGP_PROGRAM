@@ -181,6 +181,19 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QPushButton" name="btnDB">
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>DB</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
