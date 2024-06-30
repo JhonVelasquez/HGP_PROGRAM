@@ -24,9 +24,9 @@ GUI:
 
 Main window view:
 - Subwindows for observing and modifying table entities: Habitaciones (rooms), Clientes (clients), Alquileres (rents), and Habitaciones_estado(room states)
-![alt text](https://github.com/JhonVelasquez/HGP_PROGRAM/program_main.png)
+![alt text](https://github.com/JhonVelasquez/HGP_PROGRAM/blob/main/program_main.png)
 
 Database management:
 - Selection of the route to the database.
 - Migration between two databases, the route for address source and destination are needed.
-![alt text](https://github.com/JhonVelasquez/HGP_PROGRAM/db_management.png)
+![alt text](https://github.com/JhonVelasquez/HGP_PROGRAM/blob/main/db_management.png)
